@@ -35,7 +35,7 @@ Features
 
 Creating a logger
 ^^^^^^^^^^^^^^^^^
-Um einen Logger zu erstellen, verwenden Sie die get_logger-Funktion. Diese Funktion stellt sicher, dass Sie eine Instanz von RiscLogger erhalten, die ordnungsgemäß konfiguriert ist
+To create a logger, use the get_logger function. This function ensures that you get an instance of RiscLogger that is properly configured.
 
 .. code-block:: python
 
