@@ -35,9 +35,11 @@ Features
 
 Creating a logger
 ^^^^^^^^^^^^^^^^^
-Um einen Logger zu erstellen, verwenden Sie die get_logger-Funktion. Diese Funktion stellt sicher, dass Sie eine Instanz von RiscLogger erhalten, die ordnungsgemäß konfiguriert ist::
+Um einen Logger zu erstellen, verwenden Sie die get_logger-Funktion. Diese Funktion stellt sicher, dass Sie eine Instanz von RiscLogger erhalten, die ordnungsgemäß konfiguriert ist
 
-    from risclog.logging import get_logger
+.. code-block:: python
+
+        from risclog.logging import get_logger
 
 	# create logger
 	logger = get_logger(name='my_logger')
@@ -127,9 +129,9 @@ Here is a complete example showing how to use the risclog.logginng package in an
 
 	@logger.logging_decorator(send_email=True)
 	async def process_data(x, y):
-    	if x < 0:
-        	raise ValueError("x cannot be negative")
-	    return x + y
+    	        if x < 0:
+        	        raise ValueError("x cannot be negative")
+	        return x + y
 
 	# Asynchron Logging
 	result = await process_data(5, 10)
