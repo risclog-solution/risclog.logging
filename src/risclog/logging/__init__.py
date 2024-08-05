@@ -367,7 +367,11 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
             return sync_wrapper
 
 
-def get_logger(name: str):
+def get_logger(name: str = None):
+    if not name:
+        frm = inspect.stack()[1]
+        mod = inspect.getmodule(frm[0])
+        name = mod.__name__
     return RiscLogger(name=name)
 
 
