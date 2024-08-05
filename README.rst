@@ -26,7 +26,7 @@ The risclog.logging package provides a comprehensive solution for structured log
 
 Installation
 ------------
-	$ pip install structlog
+    $ pip install structlog
 
 
 Features
@@ -39,18 +39,22 @@ To create a logger, use the get_logger function. This function ensures that you 
 
 .. code-block:: python
 
-        from risclog.logging import get_logger
+    from risclog.logging import get_logger
 
-	# create logger
-	logger = get_logger(name='my_logger')
+    # create logger
+    logger = get_logger(name='my_logger')
 
 
 Configuration of the logger
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The logger configuration takes place automatically when the logger instance is created using get_logger. The _configure_logger method sets up structlog and logging to provide logs with timestamps, context variables and formatting. You can customize the configuration as required.
 
-Log messages
-^^^^^^^^^^^^
+The module is configured to automatically read the logging level from an environment variable. By default, the level is set to `INFO`. To adjust this, set the `LOG_LEVEL` environment variable:
+
+.. code-block:: bash
+
+    export LOG_LEVEL=DEBUG
+
 
 Use the following methods to log messages with different log levels:
 
@@ -79,23 +83,23 @@ The logging_decorator decorator can be used to provide methods with automatic lo
 
 .. code-block:: python
 
-	from risclog.logging import get_logger
+    from risclog.logging import get_logger
 
-	logger = get_logger(name='my_logger')
+    logger = get_logger(name='my_logger')
 
-	@logger.logging_decorator(send_email=True)
-	async def some_async_function(x, y):
-    		return x + y
+    @logger.logging_decorator(send_email=True)
+    async def some_async_function(x, y):
+        return x + y
 
 .. code-block:: python
 
-	from risclog.logging import get_logger
+    from risclog.logging import get_logger
 
-	logger = get_logger(name='my_logger')
+    logger = get_logger(name='my_logger')
 
-	@logger.logging_decorator()
-	def some_sync_function(x, y):
-    		return x + y
+    @logger.logging_decorator
+    def some_sync_function(x, y):
+        return x + y
 
 
 Error handling and e-mail notification
@@ -119,23 +123,36 @@ Here is a complete example showing how to use the risclog.logginng package in an
 
 .. code-block:: python
 
-	from risclog.logging import get_logger
+    import os
+    import asyncio
+    from risclog.logging import get_logger
 
-	# create Logger
-	logger = get_logger(name='my_application')
 
-	# use Logger-Methods
-	logger.info("Application started")
+    os.environ["LOG_LEVEL"] = "DEBUG"
 
-	@logger.logging_decorator(send_email=True)
-	async def process_data(x, y):
-    	        if x < 0:
-        	        raise ValueError("x cannot be negative")
-	        return x + y
+    logger = get_logger("async_debug_example")
 
-	# Asynchron Logging
-	result = await process_data(5, 10)
-	logger.info(f"Processing result: {result}")
+
+    @logger.logging_decorator(send_email=True)
+    async def fetch_data(url: str):
+        await logger.debug(f"Start retrieving data from  {url}")
+        await asyncio.sleep(2)  # Simulates a delay, such as a network request
+        await logger.debug(f"Successfully retrieved data from {url}")
+        return {"data": f"Sample data from {url}"}
+
+
+    @logger.logging_decorator
+    async def main():
+        url = "https://example.com"
+        await logger.debug(f"Start main function with URL: {url}")
+        data = await fetch_data(url)
+        await logger.debug(f"Data received: {data}")
+
+
+    if __name__ == "__main__":
+        logger.info("Start main function")
+        asyncio.run(main())
+
 
 Run tests::
 
