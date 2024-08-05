@@ -26,7 +26,11 @@ The risclog.logging package provides a comprehensive solution for structured log
 
 Installation
 ------------
-    $ pip install structlog
+Before using the `rislog.logging` module, ensure that the necessary dependencies are installed. Use pip for installation:
+
+.. code-block:: bash
+
+    pip install structlog
 
 
 Features
