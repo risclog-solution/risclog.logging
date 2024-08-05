@@ -163,12 +163,12 @@ output:
 .. code-block:: bash
 
     2024-08-05 11:38:51 [info     ] [async_debug_example] __id=4378622064 __sender=inline message=Start main function
-    2024-08-05 11:38:51 [info     ] [async_debug_example] __id=4384943584 __sender=async_logging_decorator _function=main _script=huhu.py message=Method "main" called with no arguments.
-    2024-08-05 11:38:51 [debug    ] [async_debug_example] __id=4378552584 __sender=inline _function=main _script=huhu.py message=Start main function with URL: https://example.com
-    2024-08-05 11:38:51 [info     ] [async_debug_example] __id=4384943744 __sender=async_logging_decorator _function=fetch_data _script=huhu.py message=Method called: "fetch_data" with: "{'arg_0': 'https://example.com'}"
-    2024-08-05 11:38:51 [debug    ] [async_debug_example] __id=4366292144 __sender=inline _function=fetch_data _script=huhu.py message=Start retrieving data from  https://example.com
-    2024-08-05 11:38:53 [debug    ] [async_debug_example] __id=4366292144 __sender=inline _function=fetch_data _script=huhu.py message=Successfully retrieved data from https://example.com
-    2024-08-05 11:38:53 [info     ] [async_debug_example] __id=4384943744 __sender=async_logging_decorator _function=fetch_data _script=huhu.py message=Method "fetch_data" returned: "{'data': 'Sample data from https://example.com'}"
+    2024-08-05 11:38:51 [info     ] [async_debug_example] __id=4384943584 __sender=async_logging_decorator _function=main _script=example.py message=Method "main" called with no arguments.
+    2024-08-05 11:38:51 [debug    ] [async_debug_example] __id=4378552584 __sender=inline _function=main _script=example.py message=Start main function with URL: https://example.com
+    2024-08-05 11:38:51 [info     ] [async_debug_example] __id=4384943744 __sender=async_logging_decorator _function=fetch_data _script=example.py message=Method called: "fetch_data" with: "{'arg_0': 'https://example.com'}"
+    2024-08-05 11:38:51 [debug    ] [async_debug_example] __id=4366292144 __sender=inline _function=fetch_data _script=example.py message=Start retrieving data from  https://example.com
+    2024-08-05 11:38:53 [debug    ] [async_debug_example] __id=4366292144 __sender=inline _function=fetch_data _script=example.py message=Successfully retrieved data from https://example.com
+    2024-08-05 11:38:53 [info     ] [async_debug_example] __id=4384943744 __sender=async_logging_decorator _function=fetch_data _script=example.py message=Method "fetch_data" returned: "{'data': 'Sample data from https://example.com'}"
     2024-08-05 11:38:53 [debug    ] [async_debug_example] __id=4378552584 __sender=inline message=Data received: {'data': 'Sample data from https://example.com'}
     2024-08-05 11:38:53 [info     ] [async_debug_example] __id=4384943584 __sender=async_logging_decorator message=Method "main" returned: "None"
 
