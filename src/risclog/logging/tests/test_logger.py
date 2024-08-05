@@ -8,7 +8,6 @@ from risclog.logging import RiscLogger, get_logger, rename_event_to_message
 
 def test_logger_singleton(setup_logger):
     logger1 = get_logger('test_logger')
-    # logger2 = get_logger('test_logger')
     logger2 = get_logger(__name__)
 
     assert logger1 is logger2, 'RiscLogger should be a singleton instance'
