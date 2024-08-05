@@ -92,7 +92,9 @@ def test_exception_log(setup_logger, caplog):
 
 @pytest.mark.asyncio
 async def test_async_logging_decorator(setup_logger, caplog):
-    @RiscLogger.logging_decorator
+    logger = setup_logger
+
+    @logger.logging_decorator
     async def async_test_func(arg_0, arg_1):
         return f'Result: {arg_0 + arg_1}'
 
@@ -120,7 +122,9 @@ async def test_async_logging_decorator(setup_logger, caplog):
 
 
 def test_sync_logging_decorator(setup_logger, caplog):
-    @RiscLogger.logging_decorator()
+    logger = setup_logger
+
+    @logger.logging_decorator()
     def sync_test_func(arg1, arg2):
         return f'Result: {arg1 + arg2}'
 
@@ -149,7 +153,9 @@ def test_sync_logging_decorator(setup_logger, caplog):
 
 @patch('risclog.logging.smtp_email_send')
 def test_exception_logging_with_email(mock_smtp_send, setup_logger, caplog):
-    @RiscLogger.logging_decorator(send_email=True)
+    logger = setup_logger
+
+    @logger.logging_decorator(send_email=True)
     def faulty_func():
         raise ValueError('This is an error')
 
@@ -189,7 +195,9 @@ def test_exception_logging_with_email(mock_smtp_send, setup_logger, caplog):
 async def test_async_exception_logging_with_email(
     mock_smtp_send, setup_logger, caplog
 ):
-    @RiscLogger.logging_decorator(send_email=True)
+    logger = setup_logger
+
+    @logger.logging_decorator(send_email=True)
     async def faulty_async_func():
         raise ValueError('This is an async error')
 

@@ -35,6 +35,7 @@ class RiscLoggerSingletonMeta(type):
             cls._instances[cls] = super(RiscLoggerSingletonMeta, cls).__call__(
                 *args, **kwargs
             )
+
         return cls._instances[cls]
 
 
@@ -51,7 +52,17 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
 
     @classmethod
     def _configure_logger(cls):
-        log_level = logging.DEBUG  # if get_metadata().debug else logging.INFO
+        LEVELS = {
+            'CRITICAL': 50,
+            'FATAL': 50,
+            'ERROR': 40,
+            'WARNING': 30,
+            'WARN': 30,
+            'INFO': 20,
+            'DEBUG': 10,
+        }
+
+        log_level = LEVELS.get(os.getenv('LOG_LEVEL'), 20)
 
         timestamper = structlog.processors.TimeStamper(fmt='%Y-%m-%d %H:%M:%S')
         shared_processors: list[Processor] = [
