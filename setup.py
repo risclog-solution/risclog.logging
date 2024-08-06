@@ -13,13 +13,15 @@ with open('CHANGES.rst') as history_file:
 setup(
     author='riscLOG Solution GmbH',
     author_email='info@risclog.de',
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: German',
         'Programming Language :: Python :: 3',
+        'programming language :: python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
     ],
