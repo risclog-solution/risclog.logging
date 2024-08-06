@@ -10,12 +10,6 @@ risclog.logging
 .. image:: https://img.shields.io/pypi/v/risclog.logging.svg
         :target: https://pypi.python.org/pypi/risclog.logging
 
-.. image:: https://img.shields.io/travis/risclog-solution/risclog.logging.svg
-        :target: https://travis-ci.com/risclog-solution/risclog.logging
-
-.. image:: https://readthedocs.org/projects/risclog.logging/badge/?version=latest
-        :target: https://risclog.logging.readthedocs.io/en/latest/?version=latest
-        :alt: Documentation Status
 
 The risclog.logging package provides a comprehensive solution for structured logging in Python applications. Risclog.logging uses structlog and logging to generate detailed and formatted log entries. The package supports both synchronous and asynchronous log messages and provides options for automatic e-mail notification of exception errors.
 
