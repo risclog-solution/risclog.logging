@@ -20,7 +20,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: German',
         'Programming Language :: Python :: 3',
-        'programming language :: python :: 3.8',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
@@ -59,6 +59,6 @@ setup(
     namespace_packages=['risclog'],
     package_dir={'': 'src'},
     url='https://github.com/risclog-solution/risclog.logging',
-    version='1.1.dev0',
+    version='1.0.1',
     zip_safe=False,
 )
