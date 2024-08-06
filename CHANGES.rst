@@ -6,7 +6,7 @@ Change log for risclog.logging
 1.0.2 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Fix CI status badge.
 
 
 1.0.1 (2024-08-06)
