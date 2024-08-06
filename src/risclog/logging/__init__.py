@@ -235,9 +235,9 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
         )
 
     @classmethod
-    def logging_decorator(cls, method=None, send_email=False):
+    def decorator(cls, method=None, send_email=False):
         if method is None:
-            return lambda m: cls.logging_decorator(m, send_email)
+            return lambda m: cls.decorator(m, send_email)
 
         function_id = id(method)
         if not cls._instances:

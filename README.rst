@@ -24,15 +24,6 @@ The risclog.logging package provides a comprehensive solution for structured log
 * Documentation: https://risclog.logging.readthedocs.io.
 
 
-Installation
-------------
-Before using the `rislog.logging` module, ensure that the necessary dependencies are installed. Use pip for installation:
-
-.. code-block:: bash
-
-    pip install structlog
-
-
 Features
 --------
 
@@ -83,7 +74,7 @@ The risclog.logging package supports both synchronous and asynchronous log messa
 Decorator for logging
 ^^^^^^^^^^^^^^^^^^^^^
 
-The logging_decorator decorator can be used to provide methods with automatic logging and optional e-mail notification of exceptions
+The decorator decorator can be used to provide methods with automatic logging and optional e-mail notification of exceptions
 
 .. code-block:: python
 
@@ -91,7 +82,7 @@ The logging_decorator decorator can be used to provide methods with automatic lo
 
     logger = get_logger(name='my_logger')
 
-    @logger.logging_decorator(send_email=True)
+    @logger.decorator(send_email=True)
     async def some_async_function(x, y):
         return x + y
 
@@ -101,7 +92,7 @@ The logging_decorator decorator can be used to provide methods with automatic lo
 
     logger = get_logger(name='my_logger')
 
-    @logger.logging_decorator
+    @logger.decorator
     def some_sync_function(x, y):
         return x + y
 
@@ -137,7 +128,7 @@ Here is a complete example showing how to use the risclog.logginng package in an
     logger = get_logger("async_debug_example")
 
 
-    @logger.logging_decorator(send_email=True)
+    @logger.decorator(send_email=True)
     async def fetch_data(url: str):
         await logger.debug(f"Start retrieving data from  {url}")
         await asyncio.sleep(2)  # Simulates a delay, such as a network request
@@ -145,7 +136,7 @@ Here is a complete example showing how to use the risclog.logginng package in an
         return {"data": f"Sample data from {url}"}
 
 
-    @logger.logging_decorator
+    @logger.decorator
     async def main():
         url = "https://example.com"
         await logger.debug(f"Start main function with URL: {url}")

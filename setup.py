@@ -25,8 +25,6 @@ setup(
     ],
     description='A logger based on structlog',
     install_requires=[
-        'pydantic[dotenv]',
-        'pydantic-settings',
         # Add your dependencies here
         'structlog',
     ],
