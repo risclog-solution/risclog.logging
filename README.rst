@@ -2,8 +2,8 @@
 risclog.logging
 ===============
 
-.. image:: https://github.com/risclog-solution/risclog.logging/workflows/Test/badge.svg?branch=master
-     :target: https://github.com/risclog-solution/risclog.logging/actions?workflow=Test
+.. image:: https://github.com/risclog-solution/risclog.logging/actions/workflows/test.yml/badge.svg
+     :target: https://github.com/risclog-solution/risclog.logging/actions/workflows/test.yml
      :alt: CI Status
 
 
