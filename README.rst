@@ -25,11 +25,12 @@ The risclog.logging package provides a comprehensive solution for structured log
 
 
 Features
---------
+========
 
 
 Creating a logger
-^^^^^^^^^^^^^^^^^
+-----------------
+
 To create a logger, use the get_logger function. This function ensures that you get an instance of RiscLogger that is properly configured.
 
 .. code-block:: python
@@ -41,7 +42,8 @@ To create a logger, use the get_logger function. This function ensures that you 
 
 
 Configuration of the logger
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------
+
 The logger configuration takes place automatically when the logger instance is created using get_logger. The _configure_logger method sets up structlog and logging to provide logs with timestamps, context variables and formatting. You can customize the configuration as required.
 
 The module is configured to automatically read the logging level from an environment variable. By default, the level is set to `INFO`. To adjust this, set the `LOG_LEVEL` environment variable:
@@ -63,7 +65,7 @@ Use the following methods to log messages with different log levels:
 
 
 Asynchronous and synchronous log messages
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------
 
 The risclog.logging package supports both synchronous and asynchronous log messages. If you are working in an asynchronous environment, use the asynchronous versions of the log methods:
 
@@ -71,8 +73,9 @@ The risclog.logging package supports both synchronous and asynchronous log messa
 * Asynchronous info message: await logger.info("Async info message")
 * And so on...
 
+
 Decorator for logging
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 The decorator decorator can be used to provide methods with automatic logging and optional e-mail notification of exceptions
 
@@ -98,7 +101,7 @@ The decorator decorator can be used to provide methods with automatic logging an
 
 
 Error handling and e-mail notification
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------
 
 If you set the send_email parameter to True, an email notification is automatically sent in the event of an exception. The email is sent asynchronously via a ThreadPoolExecutor and contains the exception details.
 
@@ -111,7 +114,7 @@ If you set the send_email parameter to True, an email notification is automatica
 
 
 Example
-^^^^^^^
+-------
 
 Here is a complete example showing how to use the risclog.logginng package in an application
 
@@ -170,10 +173,8 @@ Run tests::
     $ ./pytest
 
 
-
-
 Credits
--------
+=======
 
 This package was created with Cookiecutter_ and the `risclog-solution/risclog-cookiecutter-pypackage`_ project template.
 
