@@ -1,13 +1,21 @@
 import pytest
-from risclog.logging import get_logger
+from risclog.logging import RiscLogger, get_logger
 
 
-@pytest.fixture(scope='function')
-def setup_logger(monkeypatch):
-    monkeypatch.setenv('logging_email_smtp_user', 'user@example.com')
-    monkeypatch.setenv('logging_email_smtp_password', 'password')
-    monkeypatch.setenv('logging_email_to', 'recipient@example.com')
+@pytest.fixture
+def mock_environment(monkeypatch):
+    monkeypatch.setenv('LOG_LEVEL', 'DEBUG')
+    monkeypatch.setenv('logging_email_smtp_user', 'test_user@example.com')
+    monkeypatch.setenv('logging_email_smtp_password', 'test_password')
+    monkeypatch.setenv('logging_email_to', 'admin@example.com')
     monkeypatch.setenv('logging_email_smtp_server', 'smtp.example.com')
 
-    logger = get_logger('test_logger')
-    return logger
+
+@pytest.fixture
+def logger1() -> RiscLogger:
+    return get_logger('test_logger_1')
+
+
+@pytest.fixture
+def logger2() -> RiscLogger:
+    return get_logger('test_logger_2')

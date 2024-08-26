@@ -27,19 +27,7 @@ def rename_event_to_message(_, __, event_dict):
     return sorted_dict
 
 
-class RiscLoggerSingletonMeta(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(RiscLoggerSingletonMeta, cls).__call__(
-                *args, **kwargs
-            )
-
-        return cls._instances[cls]
-
-
-class RiscLogger(metaclass=RiscLoggerSingletonMeta):
+class RiscLogger:
     def __init__(self, name: str = None) -> None:
         self.logger = structlog.stdlib.get_logger(name)
         self.logger_name = name
@@ -95,15 +83,20 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
                 log_renderer,
             ],
         )
+
         # set logger Level from asyncio package to WARNING
         logging.getLogger('asyncio').setLevel(logging.WARNING)
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        root_logger = logging.getLogger()
-        root_logger.addHandler(handler)
-        root_logger.setLevel(log_level)
+        if not logging.getLogger().hasHandlers():
+            handler = logging.StreamHandler()
+            handler.setFormatter(formatter)
+            root_logger = logging.getLogger()
+            root_logger.addHandler(handler)
+            root_logger.setLevel(log_level)
 
-        for _log in ['uvicorn', 'uvicorn.error']:
+        all_logger = list(logging.Logger.manager.loggerDict.keys())
+        all_logger.extend(['uvicorn', 'uvicorn.error'])
+
+        for _log in list(set(all_logger)):
             logging.getLogger(_log).handlers.clear()
             logging.getLogger(_log).propagate = True
 
@@ -136,8 +129,8 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
         self,
         level: str,
         msg: str,
-        function_id: int,
         sender: str = 'inline',
+        method_id: int = None,
         *args,
         **kwargs,
     ) -> Coroutine:
@@ -146,7 +139,15 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
         except RuntimeError:
             loop = None
 
+        if method_id:
+            function_id = method_id
+        else:
+            caller_frame = inspect.stack()[2]
+            caller_name = caller_frame.function
+            function_id = id(caller_name)
+
         if loop and loop.is_running():
+
             return self._async_log(
                 level=level,
                 msg=msg,
@@ -167,83 +168,63 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
                 )
             )
 
-    @staticmethod
-    def set_caller_id(func):
-        def wrapper(*args, **kwargs):
-            if 'function_id' not in kwargs:
-                caller_frame = inspect.stack()[1]
-                caller_name = caller_frame.function
-                function_id = id(caller_name)
-                kwargs['function_id'] = function_id
-
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    @set_caller_id
     def debug(
-        self, msg: str = None, function_id: int = None, *args, **kwargs
+        self, msg: str = None, method_id: int = None, *args, **kwargs
     ) -> Coroutine:
         return self._log(
-            'debug', msg, function_id=function_id, *args, **kwargs
+            level='debug', msg=msg, method_id=method_id, *args, **kwargs
         )
 
-    @set_caller_id
     def info(
-        self, msg: str = None, function_id: int = None, *args, **kwargs
+        self, msg: str = None, method_id: int = None, *args, **kwargs
     ) -> Coroutine:
-        return self._log('info', msg, function_id=function_id, *args, **kwargs)
+        return self._log(
+            level='info', msg=msg, method_id=method_id, *args, **kwargs
+        )
 
-    @set_caller_id
     def warning(
-        self, msg: str = None, function_id: int = None, *args, **kwargs
+        self, msg: str = None, method_id: int = None, *args, **kwargs
     ) -> Coroutine:
         return self._log(
-            'warning', msg, function_id=function_id, *args, **kwargs
+            level='warning', msg=msg, method_id=method_id, *args, **kwargs
         )
 
-    @set_caller_id
     def fatal(
-        self, msg: str = None, function_id: int = None, *args, **kwargs
+        self, msg: str = None, method_id: int = None, *args, **kwargs
     ) -> Coroutine:
         return self._log(
-            'fatal', msg, function_id=function_id, *args, **kwargs
+            level='fatal', msg=msg, method_id=method_id, *args, **kwargs
         )
 
-    @set_caller_id
     def critical(
-        self, msg: str = None, function_id: int = None, *args, **kwargs
+        self, msg: str = None, method_id: int = None, *args, **kwargs
     ) -> Coroutine:
         return self._log(
-            'critical', msg, function_id=function_id, *args, **kwargs
+            level='critical', msg=msg, method_id=method_id, *args, **kwargs
         )
 
-    @set_caller_id
     def exception(
-        self, msg: str = None, function_id: int = None, *args, **kwargs
+        self, msg: str = None, method_id: int = None, *args, **kwargs
     ) -> Coroutine:
         return self._log(
-            'error', msg, function_id=function_id, *args, **kwargs
+            level='error', msg=msg, method_id=method_id, *args, **kwargs
         )
 
-    @set_caller_id
     def error(
-        self, msg: str = None, function_id: int = None, *args, **kwargs
+        self, msg: str = None, method_id: int = None, *args, **kwargs
     ) -> Coroutine:
         return self._log(
-            'error', msg, function_id=function_id, *args, **kwargs
+            level='error', msg=msg, method_id=method_id, *args, **kwargs
         )
 
     @classmethod
     def decorator(cls, method=None, send_email=False):
+        method_id = id(method)
+
         if method is None:
             return lambda m: cls.decorator(m, send_email)
 
-        function_id = id(method)
-        if not cls._instances:
-            logger = cls(name=__name__)
-        else:
-            logger = cls._instances[cls]
+        logger = cls(name=__name__)
 
         if inspect.iscoroutinefunction(method):
 
@@ -264,21 +245,21 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
                     if params:
                         await logger.info(
                             f'Method called: "{method.__name__}" with: "{params}"',
-                            function_id=function_id,
                             sender='async_logging_decorator',
+                            method_id=method_id,
                         )
                     else:
                         await logger.info(
                             f'Method "{method.__name__}" called with no arguments.',
                             sender='async_logging_decorator',
-                            function_id=function_id,
+                            method_id=method_id,
                         )
 
                     value = await method(*args, **kwargs)
                     await logger.info(
                         f'Method "{method.__name__}" returned: "{value}"',
                         sender='async_logging_decorator',
-                        function_id=function_id,
+                        method_id=method_id,
                     )
                     return value
                 except Exception as exc:
@@ -296,7 +277,7 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
                     await logger.exception(
                         message,
                         sender='async_logging_decorator',
-                        function_id=function_id,
+                        method_id=method_id,
                     )
                     raise exc
                 finally:
@@ -324,21 +305,21 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
                     if params:
                         logger.info(
                             f'Method called: "{method.__name__}" with: "{params}"',
-                            function_id=function_id,
                             sender='logging_decorator',
+                            method_id=method_id,
                         )
                     else:
                         logger.info(
                             f'Method "{method.__name__}" called with no arguments.',
                             sender='logging_decorator',
-                            function_id=function_id,
+                            method_id=method_id,
                         )
 
                     value = method(*args, **kwargs)
                     logger.info(
                         f'Method "{method.__name__}" returned: "{value}"',
                         sender='logging_decorator',
-                        function_id=function_id,
+                        method_id=method_id,
                     )
                     return value
                 except Exception as exc:
@@ -356,7 +337,7 @@ class RiscLogger(metaclass=RiscLoggerSingletonMeta):
                     logger.exception(
                         message,
                         sender='logging_decorator',
-                        function_id=function_id,
+                        method_id=method_id,
                     )
                     raise exc
                 finally:
@@ -371,7 +352,11 @@ def get_logger(name: str = None):
     if not name:
         frm = inspect.stack()[1]
         mod = inspect.getmodule(frm[0])
-        name = mod.__name__
+
+        if not hasattr(mod, __name__):
+            name = mod.__name__
+        else:
+            name = logging.getLogger().name
     return RiscLogger(name=name)
 
 
