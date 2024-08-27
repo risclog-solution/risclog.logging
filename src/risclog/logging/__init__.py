@@ -224,7 +224,7 @@ class RiscLogger:
         if method is None:
             return lambda m: cls.decorator(m, send_email)
 
-        logger = cls(name=__name__)
+        logger = cls(name=method.__module__)
 
         if inspect.iscoroutinefunction(method):
 

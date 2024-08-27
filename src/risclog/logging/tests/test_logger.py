@@ -287,7 +287,7 @@ def test_exception_logging_with_email(mock_smtp_send, logger1, caplog):
     ), 'smtp_email_send should be called with two keyword arguments'
 
     expected_message = 'Exception occurred in method: faulty_func'
-    expected_logger_name = 'risclog.logging'
+    expected_logger_name = 'risclog.logging.tests.test_logger'
     assert (
         expected_message in kwargs['message']
     ), f"First keyword argument should be '{expected_message}'"
