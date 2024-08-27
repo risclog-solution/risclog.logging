@@ -392,3 +392,18 @@ def test_handle_keyboard_interrupt(logger1):
         risclog.logging.RiscLogger._configure_logger()
         sys.excepthook(KeyboardInterrupt, None, None)
         mock_excepthook.assert_called_once_with(KeyboardInterrupt, None, None)
+
+
+def test_inline_and_decorator_have_same_id_in_logs(logger1, caplog):
+    @logger1.decorator()
+    def test_func():
+        logger1.info('This is a message from the decorator')
+
+    with caplog.at_level(logging.INFO):
+        test_func()
+
+    log_records = [
+        record for record in caplog.records if record.levelname == 'INFO'
+    ]
+    assert len(log_records) == 3
+    assert len(set([r.msg['__id'] for r in log_records])) == 1

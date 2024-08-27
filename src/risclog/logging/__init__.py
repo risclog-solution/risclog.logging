@@ -219,11 +219,10 @@ class RiscLogger:
 
     @classmethod
     def decorator(cls, method=None, send_email=False):
-        method_id = id(method)
-
         if method is None:
             return lambda m: cls.decorator(m, send_email)
 
+        method_id = id(method.__name__)
         logger = cls(name=method.__module__)
 
         if inspect.iscoroutinefunction(method):
