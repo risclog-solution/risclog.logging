@@ -6,7 +6,7 @@ Change log for risclog.logging
 1.0.3 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Allow logging with multiple loggers in a single module.
 
 
 1.0.2 (2024-08-06)
