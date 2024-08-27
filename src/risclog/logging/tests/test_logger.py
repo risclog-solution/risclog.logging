@@ -406,4 +406,4 @@ def test_inline_and_decorator_have_same_id_in_logs(logger1, caplog):
         record for record in caplog.records if record.levelname == 'INFO'
     ]
     assert len(log_records) == 3
-    assert len(set([r.msg['__id'] for r in log_records])) == 1
+    assert len({r.msg['__id'] for r in log_records}) == 1
