@@ -368,10 +368,10 @@ def exception_to_string(excp):
 
 
 def smtp_email_send(message: str, logger_name: str) -> None:
-    smtp_user = os.getenv('logging_email_smtp_user')
-    smtp_password = os.getenv('logging_email_smtp_password')
-    email_to = os.getenv('logging_email_to')
-    smtp_server = os.getenv('logging_email_smtp_server')
+    smtp_user = os.getenv('LOGGING_EMAIL_SMTP_USER')
+    smtp_password = os.getenv('LOGGING_EMAIL_SMTP_PASSWORD')
+    email_to = os.getenv('LOGGING_EMAIL_TO')
+    smtp_server = os.getenv('LOGGING_EMAIL_SMTP_SERVER')
 
     if smtp_user and smtp_password and email_to and smtp_server:
         # Email server setup
