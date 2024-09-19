@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-1.1.1 (unreleased)
+1.2.0 (2024-09-19)
 ==================
 
 - rename email environments
