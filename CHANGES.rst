@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-1.2.1 (unreleased)
+1.2.1 (2024-09-20)
 ==================
 
 - forward exceptions
