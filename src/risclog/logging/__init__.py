@@ -107,6 +107,7 @@ class RiscLogger:
             if issubclass(exc_type, KeyboardInterrupt):
                 sys.__excepthook__(exc_type, exc_value, exc_traceback)
                 return False
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
         sys.excepthook = handle_exception
 
