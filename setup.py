@@ -49,8 +49,6 @@ setup(
             'requests',
             'httpx',
             'pytest-asyncio',
-            'fastapi[all]',
-            'risclog.fastapi>=1.2.1',
         ],
     },
     license='MIT license',
