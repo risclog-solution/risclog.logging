@@ -166,7 +166,7 @@ class HybridLogger:
 
     def decorator(self, send_email: bool = False):
         warnings.warn(
-            "'decorator' is deprecated and will be removed from version 2.1.0. Please use 'log_decorator' instead.",
+            "'decorator' is deprecated and will be removed from version 1.3.0. Please use 'log_decorator' instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -210,7 +210,7 @@ def getLogger(name: str = __name__):
 
 def get_logger(name: str = __name__):
     warnings.warn(
-        "'get_logger' is obsolete and will be removed from version 2.1.0. Please use 'getLogger' instead.",
+        "'get_logger' is obsolete and will be removed from version 1.3.0. Please use 'getLogger' instead.",
         DeprecationWarning,
         stacklevel=2,
     )
