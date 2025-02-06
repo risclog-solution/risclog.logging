@@ -29,6 +29,7 @@ setup(
     install_requires=[
         # Add your dependencies here
         'structlog',
+        'rich',
     ],
     extras_require={
         'docs': [
@@ -48,6 +49,8 @@ setup(
             'requests',
             'httpx',
             'pytest-asyncio',
+            'fastapi[all]',
+            'risclog.fastapi>=1.2.1',
         ],
     },
     license='MIT license',

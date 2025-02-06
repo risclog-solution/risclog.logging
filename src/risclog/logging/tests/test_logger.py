@@ -1,409 +1,357 @@
+import asyncio
 import logging
-import sys
+import os
+import re
+import tempfile
 from unittest.mock import patch
 
 import pytest
-import risclog.logging
-from structlog._config import BoundLoggerLazyProxy
+from risclog.logging import getLogger, log_decorator
+from risclog.logging.log import HybridLogger
+from structlog.testing import capture_logs
+
+try:
+    from structlog.stdlib import ProcessorFormatter
+except ImportError:
+    ProcessorFormatter = None
 
 
-def test_logger_initialization(
-    logger1: risclog.logging.RiscLogger, logger2: risclog.logging.RiscLogger
-) -> None:
-    assert logger1.logger_name == 'test_logger_1'
-    assert isinstance(logger1.logger, BoundLoggerLazyProxy)
+class TestLogger:
+    def test_bind(self):
+        with capture_logs() as cap_logs:
+            getLogger(__name__).bind(x='y').info('hello')
+            assert cap_logs == [
+                {'x': 'y', 'event': 'hello', 'log_level': 'info'}
+            ]
 
-    assert logger2.logger_name == 'test_logger_2'
-    assert isinstance(logger2.logger, BoundLoggerLazyProxy)
+    @pytest.mark.asyncio
+    async def test_async_logging_levels_with_different_loggers(
+        self, logger1: HybridLogger, logger2: HybridLogger
+    ) -> None:
+        with capture_logs() as cap_logs:
+            logger1.set_level(logging.DEBUG)
+            logger2.set_level(logging.INFO)
 
+            await logger1.error('Test error message logger1')
+            await logger2.info('Test info message logger2')
 
-@pytest.mark.asyncio
-async def test_logging_levels_with_different_loggers(
-    logger1: risclog.logging.RiscLogger,
-    logger2: risclog.logging.RiscLogger,
-    caplog,
-) -> None:
-    with caplog.at_level(logging.DEBUG):
-        await logger1.debug('Test debug message logger1')
-        assert 'Test debug message logger1' in caplog.text
-        assert any(record.name == 'test_logger_1' for record in caplog.records)
+            assert 'Test error message logger1' in cap_logs[0]['event']
+            assert cap_logs[0]['log_level'] == 'error'
 
-    with caplog.at_level(logging.INFO):
-        await logger2.info('Test info message logger2')
-        assert 'Test info message logger2' in caplog.text
-        assert any(record.name == 'test_logger_2' for record in caplog.records)
+            assert 'Test info message logger2' in cap_logs[1]['event']
+            assert cap_logs[1]['log_level'] == 'info'
 
-    assert not any(
-        record.name == 'test_logger_2'
-        and 'Test debug message logger1' in record.message
-        for record in caplog.records
-    )
-    assert not any(
-        record.name == 'test_logger_1'
-        and 'Test info message logger2' in record.message
-        for record in caplog.records
-    )
+    def test_sync_logging_levels_with_different_loggers(
+        self, logger1: HybridLogger, logger2: HybridLogger
+    ) -> None:
+        with capture_logs() as cap_logs:
+            logger1.set_level(logging.DEBUG)
+            logger2.set_level(logging.INFO)
 
+            logger1.debug('Test debug message logger1')
+            logger2.info('Test info message logger2')
 
-def test_sync_log_decorator_with_different_loggers(logger1, logger2, caplog):
-    @risclog.logging.RiscLogger.decorator
-    def sample_sync_function_logger1(a, b):
-        return a + b
+            assert 'Test debug message logger1' in cap_logs[0]['event']
+            assert cap_logs[0]['log_level'] == 'debug'
 
-    @risclog.logging.RiscLogger.decorator
-    def sample_sync_function_logger2(a, b):
-        return a - b
+            assert 'Test info message logger2' in cap_logs[1]['event']
+            assert cap_logs[1]['log_level'] == 'info'
 
-    with caplog.at_level(logging.INFO):
-        result1 = sample_sync_function_logger1(3, 2)
-    assert result1 == 5
-    assert "Method called: \"sample_sync_function_logger1\"" in caplog.text
+    def test_structlog_logger_name(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        logger1: HybridLogger,
+        logger2: HybridLogger,
+    ) -> None:
+        with caplog.at_level(logging.INFO):
+            logger1.bind(x='y').info('hello')
+            logger2.bind(x='y').info('hello')
 
-    with caplog.at_level(logging.INFO):
-        result2 = sample_sync_function_logger2(3, 2)
-    assert result2 == 1
-    assert "Method called: \"sample_sync_function_logger2\"" in caplog.text
+        assert len(caplog.records) > 0
 
-    assert not any(
-        record.name == 'test_logger_2'
-        and 'sample_sync_function_logger1' in record.message
-        for record in caplog.records
-    )
-    assert not any(
-        record.name == 'test_logger_1'
-        and 'sample_sync_function_logger2' in record.message
-        for record in caplog.records
-    )
+        logger_names = []
+        for record in caplog.records:
+            event_dict = record.msg if isinstance(record.msg, dict) else {}
+            if 'logger' in event_dict:
+                logger_names.append(event_dict['logger'])
 
+        assert 'test_logger_1' in logger_names
+        assert 'test_logger_2' in logger_names
 
-def test_structlog_logger_name(logger1, logger2, caplog):
-    with caplog.at_level(logging.INFO):
-        logger1.info('This is a message from logger 1')
-        logger2.info('This is a message from logger 2')
+    @pytest.mark.asyncio
+    async def test_log_decorator_logging_behavior_for_mixed_sync_async_functions(
+        self,
+    ) -> None:
+        @log_decorator
+        async def sample_async_function(a, b):
+            return a + b
 
-    assert len(caplog.records) > 0
+        @log_decorator
+        def sample_sync_function(a, b):
+            return a - b
 
-    logger_names = []
-    for record in caplog.records:
-        event_dict = record.msg if isinstance(record.msg, dict) else {}
-        if 'logger' in event_dict:
-            logger_names.append(event_dict['logger'])
+        with capture_logs() as cap_logs:
+            await sample_async_function(3, 2)
 
-    assert 'test_logger_1' in logger_names
-    assert 'test_logger_2' in logger_names
+            assert cap_logs[0]['_function'] == 'sample_async_function'
+            assert cap_logs[0]['_script'] == 'test_logger.py'
+            assert cap_logs[0]['args'] == ('a:int=3', 'b:int=2')
+            assert cap_logs[0]['kwargs'] == {}
+            assert (
+                'Decorator start: sample_async_function'
+                in cap_logs[0]['event']
+            )
+            assert cap_logs[0]['log_level'] == 'info'
 
-    for name in logger_names:
-        print(f'Logger name: {name}')
+            assert cap_logs[1]['_function'] == 'sample_async_function'
+            assert cap_logs[1]['_script'] == 'test_logger.py'
+            assert isinstance(cap_logs[1]['duration'], str)
+            assert (
+                'Decorator success: sample_async_function'
+                in cap_logs[1]['event']
+            )
+            assert cap_logs[1]['log_level'] == 'info'
 
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, sample_sync_function, 3, 2)
 
-@pytest.mark.asyncio
-async def test_async_log_decorator_with_different_loggers(
-    logger1, logger2, caplog
-):
-    @risclog.logging.RiscLogger.decorator
-    async def sample_async_function_logger1(a, b):
-        return a + b
+            assert cap_logs[2]['_function'] == 'sample_sync_function'
+            assert cap_logs[2]['_script'] == 'test_logger.py'
+            assert cap_logs[2]['args'] == ('a:int=3', 'b:int=2')
+            assert cap_logs[2]['kwargs'] == {}
+            assert (
+                'Decorator start: sample_sync_function' in cap_logs[2]['event']
+            )
+            assert cap_logs[2]['log_level'] == 'info'
 
-    @risclog.logging.RiscLogger.decorator
-    async def sample_async_function_logger2(a, b):
-        return a - b
+            assert cap_logs[3]['_function'] == 'sample_sync_function'
+            assert cap_logs[3]['_script'] == 'test_logger.py'
+            assert isinstance(cap_logs[3]['duration'], str)
+            assert (
+                'Decorator success: sample_sync_function'
+                in cap_logs[3]['event']
+            )
+            assert cap_logs[1]['log_level'] == 'info'
 
-    with caplog.at_level(logging.INFO):
-        result1 = await sample_async_function_logger1(3, 2)
+    def test_exception_to_string(self) -> None:
+        from risclog.logging.decorators import exception_to_string
 
-    assert result1 == 5
-    assert "Method called: \"sample_async_function_logger1\"" in caplog.text
-
-    with caplog.at_level(logging.INFO):
-        result2 = await sample_async_function_logger2(3, 2)
-    assert result2 == 1
-    assert "Method called: \"sample_async_function_logger2\"" in caplog.text
-
-    assert not any(
-        record.name == 'test_logger_2'
-        and 'sample_async_function_logger1' in record.message
-        for record in caplog.records
-    )
-    assert not any(
-        record.name == 'test_logger_1'
-        and 'sample_async_function_logger2' in record.message
-        for record in caplog.records
-    )
-
-
-def test_exception_to_string():
-    try:
-        raise ValueError('An error occurred')
-    except Exception as exc:
-        exc_string = risclog.logging.exception_to_string(exc)
+        try:
+            raise ValueError('An error occurred')
+        except Exception as exc:
+            exc_string = exception_to_string(exc)
         assert 'An error occurred' in exc_string
 
-
-def test_debug_log(logger1, caplog):
-    with caplog.at_level(logging.DEBUG):
-        logger1.debug('This is a debug message')
-
-    assert 'This is a debug message' in caplog.text
-    assert 'test_logger' in caplog.text
-    assert 'DEBUG' in caplog.text
-
-
-def test_info_log(logger2, caplog):
-    with caplog.at_level(logging.INFO):
-        logger2.info('This is an info message')
-
-    assert 'This is an info message' in caplog.text
-    assert 'test_logger' in caplog.text
-    assert 'INFO' in caplog.text
-
-
-def test_warning_log(logger1, caplog):
-    with caplog.at_level(logging.WARNING):
-        logger1.warning('This is a warning message')
-
-    assert 'This is a warning message' in caplog.text
-    assert 'test_logger' in caplog.text
-    assert 'WARNING' in caplog.text
-
-
-def test_error_log(logger2, caplog):
-    with caplog.at_level(logging.ERROR):
-        logger2.error('This is an error message')
-
-    assert 'This is an error message' in caplog.text
-    assert 'test_logger' in caplog.text
-    assert 'ERROR' in caplog.text
-
-
-def test_critical_log(logger1, caplog):
-    with caplog.at_level(logging.CRITICAL):
-        logger1.critical('This is a critical message')
-
-    assert 'This is a critical message' in caplog.text
-    assert 'test_logger' in caplog.text
-    assert 'CRITICAL' in caplog.text
-
-
-def test_fatal_log(logger2, caplog):
-    with caplog.at_level(logging.FATAL):
-        logger2.fatal('This is a fatal message')
-
-    assert 'This is a fatal message' in caplog.text
-    assert 'test_logger' in caplog.text
-    assert 'CRITICAL' in caplog.text
-
-
-def test_exception_log(logger1, caplog):
-    with caplog.at_level(logging.INFO):
-        logger1.exception('This is a exception message')
-
-    assert 'This is a exception message' in caplog.text
-    assert 'test_logger' in caplog.text
-    assert 'ERROR' in caplog.text
-
-
-@pytest.mark.asyncio
-async def test_async_logging_decorator(logger1, caplog):
-    @logger1.decorator
-    async def async_test_func(arg_0, arg_1):
-        return f'Result: {arg_0 + arg_1}'
-
-    with caplog.at_level(logging.INFO):
-        result = await async_test_func(1, 2)
-
-    assert result == 'Result: 3'
-
-    log_records = [
-        record for record in caplog.records if record.levelname == 'INFO'
-    ]
-    assert len(log_records) >= 2
-
-    first_log = log_records[0].msg
-    second_log = log_records[1].msg
-
-    assert (
-        'Method called: "async_test_func" with: "{\'arg_0\': 1, \'arg_1\': 2}"'
-        in first_log['message']
-    )
-    assert (
-        'Method "async_test_func" returned: "Result: 3"'
-        in second_log['message']
-    )
-
-
-def test_sync_logging_decorator(logger1, caplog):
-    @logger1.decorator()
-    def sync_test_func(arg1, arg2):
-        return f'Result: {arg1 + arg2}'
-
-    with caplog.at_level(logging.INFO):
-        result = sync_test_func(3, 4)
-
-    assert result == 'Result: 7'
-
-    log_records = [
-        record for record in caplog.records if record.levelname == 'INFO'
-    ]
-    assert len(log_records) >= 2
-
-    first_log = log_records[0].msg
-    second_log = log_records[1].msg
-
-    assert (
-        'Method called: "sync_test_func" with: "{\'arg_0\': 3, \'arg_1\': 4}"'
-        in first_log['message']
-    )
-    assert (
-        'Method "sync_test_func" returned: "Result: 7"'
-        in second_log['message']
-    )
-
-
-@patch('risclog.logging.smtp_email_send')
-def test_exception_logging_with_email(mock_smtp_send, logger1, caplog):
-    @logger1.decorator(send_email=True)
-    def faulty_func():
-        raise ValueError('This is an error')
-
-    with caplog.at_level(logging.ERROR):
-        with pytest.raises(ValueError, match='This is an error'):
-            faulty_func()
-
-    assert 'Exception occurred in method: faulty_func' in caplog.text
-    assert 'This is an error' in caplog.text
-
-    assert (
-        mock_smtp_send.called
-    ), 'smtp_email_send should be called when an exception occurs with send_email=True'
-    mock_smtp_send.assert_called_once()
-
-    args, kwargs = mock_smtp_send.call_args
-
-    assert (
-        len(args) == 0
-    ), 'smtp_email_send should not be called with positional arguments'
-    assert (
-        len(kwargs) == 2
-    ), 'smtp_email_send should be called with two keyword arguments'
-
-    expected_message = 'Exception occurred in method: faulty_func'
-    expected_logger_name = 'risclog.logging.tests.test_logger'
-    assert (
-        expected_message in kwargs['message']
-    ), f"First keyword argument should be '{expected_message}'"
-    assert (
-        kwargs['logger_name'] == expected_logger_name
-    ), f"Second keyword argument should be '{expected_logger_name}'"
-
-
-@patch('risclog.logging.smtp_email_send')
-@pytest.mark.asyncio
-async def test_async_exception_logging_with_email(
-    mock_smtp_send, logger1, caplog
-):
-    @logger1.decorator(send_email=True)
-    async def faulty_async_func():
-        raise ValueError('This is an async error')
-
-    with caplog.at_level(logging.ERROR):
-        with pytest.raises(ValueError, match='This is an async error'):
-            await faulty_async_func()
-
-    assert 'Exception occurred in method: faulty_async_func' in caplog.text
-    assert 'This is an async error' in caplog.text
-
-    assert (
-        mock_smtp_send.called
-    ), 'smtp_email_send should be called when an exception occurs in async function with send_email=True'
-    mock_smtp_send.assert_called_once()
-    args, kwargs = mock_smtp_send.call_args
-
-    assert (
-        len(args) == 0
-    ), 'smtp_email_send should not be called with positional arguments'
-    assert (
-        len(kwargs) == 2
-    ), 'smtp_email_send should be called with two keyword arguments'
-
-    assert (
-        'This is an async error' in kwargs['message']
-    ), 'The error message should be in the email content'
-    assert (
-        'risclog.logging' in kwargs['logger_name']
-    ), 'Logger name should be passed to the smtp_email_send function'
-
-
-def test_rename_event_to_message():
-    event_dict = {
-        'event': 'This is an event message',
-        'level': 'info',
-        'referer': 'https://example.com',
-        'user': 'test_user',
-    }
-    expected_dict = {
-        'level': 'info',
-        'user': 'test_user',
-        'message': 'This is an event message',
-        'referer': 'https://example.com',
-    }
-    result_dict = risclog.logging.rename_event_to_message(
-        None, None, event_dict
-    )
-
-    assert (
-        result_dict == expected_dict
-    ), f'Expected {expected_dict} but got {result_dict}'
-
-
-def test_no_event_key():
-    event_dict = {
-        'level': 'info',
-        'user': 'test_user',
-        'referer': 'https://example.com',
-    }
-    expected_dict = {
-        'level': 'info',
-        'user': 'test_user',
-        'referer': 'https://example.com',
-    }
-    result_dict = risclog.logging.rename_event_to_message(
-        None, None, event_dict
-    )
-
-    assert (
-        result_dict == expected_dict
-    ), f'Expected {expected_dict} but got {result_dict}'
-
-
-def test_empty_dict():
-    event_dict = {}
-    expected_dict = {}
-    result_dict = risclog.logging.rename_event_to_message(
-        None, None, event_dict
-    )
-
-    assert (
-        result_dict == expected_dict
-    ), f'Expected {expected_dict} but got {result_dict}'
-
-
-def test_handle_keyboard_interrupt(logger1):
-    with patch('sys.__excepthook__') as mock_excepthook:
-        risclog.logging.RiscLogger._configure_logger()
-        sys.excepthook(KeyboardInterrupt, None, None)
-        mock_excepthook.assert_called_once_with(KeyboardInterrupt, None, None)
-
-
-def test_inline_and_decorator_have_same_id_in_logs(logger1, caplog):
-    @logger1.decorator()
-    def test_func():
-        logger1.info('This is a message from the decorator')
-
-    with caplog.at_level(logging.INFO):
-        test_func()
-
-    log_records = [
-        record for record in caplog.records if record.levelname == 'INFO'
-    ]
-    assert len(log_records) == 3
-    assert len({r.msg['__id'] for r in log_records}) == 1
+    def test_debug_log(self, logger1: HybridLogger):
+        with capture_logs() as cap_logs:
+            logger1.debug('This is a debug message')
+
+        assert cap_logs == [
+            {'event': 'This is a debug message', 'log_level': 'debug'}
+        ]
+
+    def test_info_log(self, logger2: HybridLogger):
+        with capture_logs() as cap_logs:
+            logger2.info('This is a info message')
+
+        assert cap_logs == [
+            {'event': 'This is a info message', 'log_level': 'info'}
+        ]
+
+    def test_warning_log(self, logger1: HybridLogger):
+        with capture_logs() as cap_logs:
+            logger1.warning('This is a warning message')
+
+        assert cap_logs == [
+            {'event': 'This is a warning message', 'log_level': 'warning'}
+        ]
+
+    def test_error_log(self, logger2: HybridLogger):
+        with capture_logs() as cap_logs:
+            logger2.error('This is a error message')
+
+        assert cap_logs == [
+            {'event': 'This is a error message', 'log_level': 'error'}
+        ]
+
+    def test_critical_log(self, logger1: HybridLogger):
+        with capture_logs() as cap_logs:
+            logger1.critical('This is a critical message')
+
+        assert cap_logs == [
+            {'event': 'This is a critical message', 'log_level': 'critical'}
+        ]
+
+    def test_fatal_log(self, logger2: HybridLogger):
+        with capture_logs() as cap_logs:
+            logger2.fatal('This is a fatal message')
+
+        assert cap_logs == [
+            {'event': 'This is a fatal message', 'log_level': 'critical'}
+        ]
+
+    def test_exception_log(self, logger1: HybridLogger):
+        with capture_logs() as cap_logs:
+            logger1.exception('This is a exception message')
+
+        assert cap_logs == [
+            {
+                'event': 'This is a exception message',
+                'exc_info': True,
+                'log_level': 'error',
+            }
+        ]
+
+    @patch('risclog.logging.sender.smtp_email_send')
+    def test_exception_logging_with_email(self, mock_smtp_send):
+        @log_decorator(send_email=True)
+        def faulty_func():
+            raise ValueError('This is an error')
+
+        with capture_logs() as cap_logs:
+            with pytest.raises(ValueError, match='This is an error'):
+                faulty_func()
+
+        assert (
+            mock_smtp_send.called
+        ), 'smtp_email_send should be called when an exception occurs with send_email=True'
+        mock_smtp_send.assert_called_once()
+
+        args, kwargs = mock_smtp_send.call_args
+
+        assert (
+            len(args) == 0
+        ), 'smtp_email_send should not be called with positional arguments'
+        assert (
+            len(kwargs) == 2
+        ), 'smtp_email_send should be called with two keyword arguments'
+
+        assert cap_logs[1]['_function'] == 'faulty_func'
+        assert cap_logs[1]['_script'] == 'test_logger.py'
+        assert 'Decorator error in faulty_func' in cap_logs[1]['event']
+        assert cap_logs[1]['log_level'] == 'error'
+
+    @patch('risclog.logging.sender.smtp_email_send')
+    @pytest.mark.asyncio
+    async def test_async_exception_logging_with_email(self, mock_smtp_send):
+        @log_decorator(send_email=True)
+        async def faulty_async_func():
+            raise ValueError('This is an async error')
+
+        with capture_logs() as cap_logs:
+            with pytest.raises(ValueError, match='This is an async error'):
+                await faulty_async_func()
+
+        assert (
+            mock_smtp_send.called
+        ), 'smtp_email_send should be called when an exception occurs with send_email=True'
+        mock_smtp_send.assert_called_once()
+
+        args, kwargs = mock_smtp_send.call_args
+
+        assert (
+            len(args) == 0
+        ), 'smtp_email_send should not be called with positional arguments'
+        assert (
+            len(kwargs) == 2
+        ), 'smtp_email_send should be called with two keyword arguments'
+
+        assert cap_logs[1]['_function'] == 'faulty_async_func'
+        assert cap_logs[1]['_script'] == 'test_logger.py'
+        assert 'Decorator error in faulty_async_func' in cap_logs[1]['event']
+        assert cap_logs[1]['log_level'] == 'error'
+
+    def test_inline_and_decorator_have_same_id_in_logs(
+        self, logger1: HybridLogger
+    ) -> None:
+        @log_decorator
+        def test_func():
+            logger1.info('This is a message from the decorator')
+
+        with capture_logs() as cap_logs:
+            test_func()
+
+        log_text1 = cap_logs[0]['event']
+        log_text1_id = re.findall(r'\d+', log_text1)
+        log_text2 = cap_logs[2]['event']
+        log_text2_id = re.findall(r'\d+', log_text2)
+
+        assert log_text1_id == log_text2_id
+
+    def test_set_level_int(self, logger1: HybridLogger) -> None:
+        logger1.set_level(logging.DEBUG)
+
+        named_logger = logging.getLogger('test_logger_1')
+        root_logger = logging.getLogger()
+
+        assert named_logger.level == logging.DEBUG
+        assert root_logger.level == logging.DEBUG
+
+    def test_set_level_str(self, logger1: HybridLogger) -> None:
+        logger1.set_level('info')
+
+        named_logger = logging.getLogger('test_logger_1')
+        root_logger = logging.getLogger()
+
+        assert named_logger.level == logging.INFO
+        assert root_logger.level == logging.INFO
+
+    def test_add_file_handler_sync_only(self):
+        hybrid_logger = HybridLogger('test_logger')
+        standard_logger = logging.getLogger('test_logger')
+        standard_logger.handlers = []
+        hybrid_logger.sync_logger = standard_logger
+        hybrid_logger.async_logger = None
+
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        temp_file.close()
+        try:
+            hybrid_logger.add_file_handler(temp_file.name, level=logging.DEBUG)
+            file_handlers = [
+                h
+                for h in standard_logger.handlers
+                if isinstance(h, logging.FileHandler)
+            ]
+            assert len(file_handlers) > 0
+
+            file_handler = file_handlers[0]
+            assert file_handler.level == logging.DEBUG
+            assert file_handler.formatter is not None
+            if ProcessorFormatter:
+                assert isinstance(file_handler.formatter, ProcessorFormatter)
+        finally:
+            os.remove(temp_file.name)
+
+    def test_add_file_handler_sync_and_async(self):
+        hybrid_logger = HybridLogger('test_logger')
+        sync_logger = logging.getLogger('test_logger_sync')
+        async_logger = logging.getLogger('test_logger_async')
+        sync_logger.handlers = []
+        async_logger.handlers = []
+        hybrid_logger.sync_logger = sync_logger
+        hybrid_logger.async_logger = async_logger
+
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        temp_file.close()
+        try:
+            hybrid_logger.add_file_handler(
+                temp_file.name, level=logging.WARNING
+            )
+            sync_handlers = [
+                h
+                for h in sync_logger.handlers
+                if isinstance(h, logging.FileHandler)
+            ]
+
+            assert len(sync_handlers) > 0
+            assert sync_handlers[0].level == logging.WARNING
+
+            async_handlers = [
+                h
+                for h in async_logger.handlers
+                if isinstance(h, logging.FileHandler)
+            ]
+            assert len(async_handlers) > 0
+            assert async_handlers[0].level == logging.WARNING
+        finally:
+            os.remove(temp_file.name)
