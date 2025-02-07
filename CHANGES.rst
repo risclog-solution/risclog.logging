@@ -11,6 +11,7 @@ Change log for risclog.logging
 - Fix log decorator mixed async sync Problem
 - old decorator function is now deprecated
 - old get_logger function is now deprecated
+- #33219
 
 
 1.2.1 (2024-09-20)
