@@ -17,7 +17,8 @@ jobs:
     with:
       versions: >-
         ["3.10","3.11"]
-
+    secrets:
+      PIPCONF: ${{ secrets.PIPCONF }}
   coverage:
     needs: test
     uses: risclog-solution/gha_workflow_templates/.github/workflows/coverage.yml@master

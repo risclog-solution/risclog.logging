@@ -11,6 +11,7 @@ recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-include src *.mako
 recursive-include src *.py
+recursive-include examples *.py
 
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
 recursive-include src *.pdf

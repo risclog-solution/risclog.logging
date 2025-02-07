@@ -3,10 +3,15 @@ Change log for risclog.logging
 ==============================
 
 
-1.2.2 (unreleased)
+1.3.0 (2025-02-06)
 ==================
 
-- Nothing changed yet.
+- added add_file_handler method to add a file handler to a logger
+- added set_level method to set the level of a logger
+- Fix log decorator mixed async sync Problem
+- old decorator function is now deprecated
+- old get_logger function is now deprecated
+- #33219
 
 
 1.2.1 (2024-09-20)

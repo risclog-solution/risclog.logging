@@ -104,3 +104,6 @@ ENV/
 
 # AppEnv specific
 .appenv/
+
+
+.DS_Store
