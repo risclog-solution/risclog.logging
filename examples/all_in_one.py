@@ -51,6 +51,10 @@ class DependencyClass:
     def __init__(self):
         pass
 
+    @classmethod
+    def direct_method(cls):
+        logger.info('Direct method called')
+
 
 @log_decorator
 def sample_function(*args, **kwargs):
@@ -105,6 +109,6 @@ if __name__ == '__main__':
     # logger.set_level(logging.ERROR)
     sync_result = sync_function(3, 5)
     asyncio.run(main())
-
+    DependencyClass.direct_method()
     # test rich exception format
     raise ValueError('Test')

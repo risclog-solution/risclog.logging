@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import os
 import warnings
 from functools import lru_cache, partial, wraps
 
@@ -17,8 +18,20 @@ _ = traceback.install()
 # -------------------------------
 # 1) Basis-Logging-Konfiguration
 # -------------------------------
+LEVELS = {
+    'CRITICAL': 50,
+    'FATAL': 50,
+    'ERROR': 40,
+    'WARNING': 30,
+    'WARN': 30,
+    'INFO': 20,
+    'DEBUG': 10,
+}
+
+log_level = LEVELS.get(os.getenv('LOG_LEVEL'), 20)
+
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=log_level,
     format='%(message)s',
     datefmt='[%Y-%m-%d %H:%M:%S]',
     # Keine Handler hier nötig, wir fügen unten manuell Handler hinzu
@@ -166,7 +179,7 @@ class HybridLogger:
 
     def decorator(self, send_email: bool = False):
         warnings.warn(
-            "'decorator' is deprecated and will be removed from version 1.3.0. Please use 'log_decorator' instead.",
+            "'decorator' is deprecated and will be removed from version 1.4.0. Please use 'log_decorator' instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -210,7 +223,7 @@ def getLogger(name: str = __name__):
 
 def get_logger(name: str = __name__):
     warnings.warn(
-        "'get_logger' is obsolete and will be removed from version 1.3.0. Please use 'getLogger' instead.",
+        "'get_logger' is obsolete and will be removed from version 1.4.0. Please use 'getLogger' instead.",
         DeprecationWarning,
         stacklevel=2,
     )
