@@ -33,6 +33,7 @@ jobs:
     uses: risclog-solution/gha_workflow_templates/.github/workflows/sonarqube.yml@master
     secrets:
       SONARQUBETOKEN: ${{ secrets.SONARQUBETOKEN }}
+      BUILD_SVC_PAT: ${{ secrets.BUILD_SVC_PAT }}
 
   publish-test-results:
     needs: test
