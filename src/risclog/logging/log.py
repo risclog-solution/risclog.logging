@@ -28,7 +28,7 @@ LEVELS = {
     'DEBUG': 10,
 }
 
-log_level = LEVELS.get(os.getenv('LOG_LEVEL'), 20)
+log_level = LEVELS.get(os.getenv('LOG_LEVEL'), 40)
 
 logging.basicConfig(
     level=log_level,
@@ -46,7 +46,8 @@ for logger_name in uvicorn_loggers:
     logger.propagate = False
 
 # Entferne Watchfiles-Logger
-logging.getLogger('watchfiles').setLevel(logging.INFO)
+logging.getLogger('watchfiles').setLevel(log_level)
+
 
 # wrapper for structlog.stdlib.filter_by_level
 def safe_filter_by_level(logger, method_name, event_dict):
@@ -107,7 +108,7 @@ class HybridLogger:
 
     def set_level(self, level: int | str) -> None:
         if isinstance(level, str):
-            level = getattr(logging, level.upper(), logging.INFO)
+            level = getattr(logging, level.upper(), log_level)
 
         if self.name:
             logging.getLogger(self.name).setLevel(level)
@@ -116,9 +117,7 @@ class HybridLogger:
 
         logging.getLogger().setLevel(level)
 
-    def add_file_handler(
-        self, filename: str, level: int = logging.DEBUG
-    ) -> None:
+    def add_file_handler(self, filename: str, level: int = log_level) -> None:
         file_handler = logging.FileHandler(filename)
         file_handler.setLevel(level)
 
@@ -193,7 +192,7 @@ class HybridLogger:
 # -----------------------------------
 # A) Konsole: mit Farbigem ConsoleRenderer
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(log_level)
 
 console_formatter = ProcessorFormatter(
     processor=ConsoleRenderer(colors=True),
@@ -208,12 +207,11 @@ console_formatter = ProcessorFormatter(
 console_handler.setFormatter(console_formatter)
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.DEBUG)
+root_logger.setLevel(log_level)
 root_logger.handlers = []
 root_logger.addHandler(console_handler)
 
-# set logger Level from asyncio package to WARNING
-logging.getLogger('asyncio').setLevel(logging.WARNING)
+logging.getLogger('asyncio').setLevel(log_level)
 
 
 @lru_cache(maxsize=None)
