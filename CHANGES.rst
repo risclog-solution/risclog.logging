@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-1.3.1 (unreleased)
+1.3.1 (2025-09-08)
 ==================
 
 - Unify default log level and set it from DEBUG to WARNING.
