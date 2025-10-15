@@ -8,12 +8,8 @@ import warnings
 from functools import lru_cache, partial, wraps
 
 import structlog
-from rich import traceback
 from structlog.dev import ConsoleRenderer
 from structlog.stdlib import ProcessorFormatter
-
-# install rich beautiful traceback
-_ = traceback.install()
 
 # -------------------------------
 # 1) Basis-Logging-Konfiguration

@@ -29,7 +29,6 @@ setup(
     install_requires=[
         # Add your dependencies here
         'structlog',
-        'rich',
     ],
     extras_require={
         'docs': [
