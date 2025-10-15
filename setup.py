@@ -59,6 +59,6 @@ setup(
     namespace_packages=['risclog'],
     package_dir={'': 'src'},
     url='https://github.com/risclog-solution/risclog.logging',
-    version='1.3.2',
+    version='1.3.3.dev0',
     zip_safe=False,
 )
