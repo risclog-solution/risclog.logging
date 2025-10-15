@@ -16,12 +16,6 @@ to generate detailed and formatted log entries. In this new release, the API has
 - **`getLogger`** – the new factory function for creating logger instances (the legacy ``get_logger`` is deprecated).
 - **`log_decorator`** – a decorator for automatic logging of function calls, including arguments, return values,
   durations, and exceptions.
-- **Rich Traceback Integration** – by default, the package installs a beautiful exception renderer via:
-
-  .. code-block:: python
-
-      from rich import traceback
-      traceback.install()
 
 Features
 ========
