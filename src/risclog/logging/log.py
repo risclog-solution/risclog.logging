@@ -150,17 +150,13 @@ class HybridLogger:
 
         def wrapper(*args, **kwargs):
             try:
-                loop = asyncio.get_event_loop_policy().get_event_loop()
-                if loop.is_running():
-                    stack = inspect.stack()
-                    caller_frame = stack[1]
-
-                    if caller_frame.function not in function_wrappers:
-                        kwargs['function_id'] = id(caller_frame.function)
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    return sync_wrapper(*args, **kwargs)
+                else:
                     func = partial(sync_wrapper, *args, **kwargs)
                     return loop.run_in_executor(None, func)
-                else:
-                    return sync_wrapper(*args, **kwargs)
             except RuntimeError:
                 stack = inspect.stack()
                 caller_frame = stack[1]
