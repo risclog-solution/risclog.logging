@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-1.3.3 (unreleased)
+1.3.3 (2025-12-04)
 ==================
 
 - fix: wrapper async
