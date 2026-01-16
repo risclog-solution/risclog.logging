@@ -178,11 +178,14 @@ class HybridLogger:
                 try:
                     loop = asyncio.get_running_loop()
                 except RuntimeError:
+                    # No running event loop, use sync wrapper directly
                     return sync_wrapper(*args, **kwargs)
                 else:
+                    # Event loop is running, execute sync_wrapper in executor
                     func = partial(sync_wrapper, *args, **kwargs)
                     return loop.run_in_executor(None, func)
             except RuntimeError:
+                # Fallback: if anything goes wrong, extract trace context and use sync wrapper
                 trace_context = _get_trace_context()
                 if trace_context:
                     kwargs["_trace_context"] = trace_context
