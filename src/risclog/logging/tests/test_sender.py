@@ -87,6 +87,42 @@ class TestSender:
         )
         assert found, "The text 'Test message' was not found in the email."
 
+    def test_smtp_email_send_with_custom_port(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> types.NoneType:
+        """Test that custom SMTP port from environment variable is used."""
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_USER", "user@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_PASSWORD", "password")
+        monkeypatch.setenv("LOGGING_EMAIL_TO", "to@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_SERVER", "smtp.example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_PORT", "587")
+
+        monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
+
+        smtp_email_send("Test message", "TestLogger")
+
+        smtp_instance = FakeSMTP.last_instance
+        assert smtp_instance is not None, "FakeSMTP instance was not created."
+        assert smtp_instance.port == 587, "Custom SMTP port should be used"
+
+    def test_smtp_email_send_default_port_when_not_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> types.NoneType:
+        """Test that default SMTP port 465 is used when not specified."""
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_USER", "user@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_PASSWORD", "password")
+        monkeypatch.setenv("LOGGING_EMAIL_TO", "to@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_SERVER", "smtp.example.com")
+        monkeypatch.delenv("LOGGING_EMAIL_SMTP_PORT", raising=False)
+
+        monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
+
+        smtp_email_send("Test message", "TestLogger")
+
+        smtp_instance = FakeSMTP.last_instance
+        assert smtp_instance is not None, "FakeSMTP instance was not created."
+        assert smtp_instance.port == 465, "Default SMTP port 465 should be used"
+
     def test_smtp_email_send_missing_env(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> types.NoneType:
