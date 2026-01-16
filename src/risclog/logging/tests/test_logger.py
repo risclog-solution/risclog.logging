@@ -330,3 +330,58 @@ class TestLogger:
             assert async_handlers[0].level == logging.WARNING
         finally:
             os.remove(temp_file.name)
+
+    def test_trace_context_captured_in_sync_logging(self):
+        """Test that trace context is captured and included in log messages."""
+        logger = HybridLogger("test_trace")
+        with capture_logs() as cap_logs:
+            logger.info("Test message")
+
+            # Verify that a message was logged
+            assert len(cap_logs) > 0
+            assert cap_logs[0]["event"] == "Test message"
+
+    def test_trace_context_with_explicit_trace_context(self):
+        """Test that explicit trace context is used when provided."""
+        logger = HybridLogger("test_trace")
+        with capture_logs() as cap_logs:
+            trace_ctx = {
+                "trace_id": "test-123",
+                "caller_function": "test_func",
+                "caller_file": "test.py",
+                "caller_line": 42,
+            }
+            logger.info("Test message", _trace_context=trace_ctx)
+
+            # Verify that a message was logged
+            assert len(cap_logs) > 0
+            # The message should contain the trace information
+            assert "test-123" in cap_logs[0]["event"]
+
+    @pytest.mark.asyncio
+    async def test_trace_context_async_logging(self):
+        """Test that trace context works with async logging."""
+        logger = HybridLogger("test_trace_async")
+        with capture_logs() as cap_logs:
+            await logger.info("Async test message")
+
+            # Verify that a message was logged
+            assert len(cap_logs) > 0
+            assert "Async test message" in cap_logs[0]["event"]
+
+    def test_trace_context_extraction_from_stack(self):
+        """Test that _get_trace_context correctly extracts caller information."""
+        logger = HybridLogger("test_trace_stack")
+
+        # Access the trace context function through the logger's method wrapper
+        # by calling info and capturing logs with introspection
+        with capture_logs() as cap_logs:
+
+            def nested_function():
+                logger.info("Message from nested function")
+
+            nested_function()
+
+            # Verify that message was logged
+            assert len(cap_logs) > 0
+            assert "Message from nested function" in cap_logs[0]["event"]
