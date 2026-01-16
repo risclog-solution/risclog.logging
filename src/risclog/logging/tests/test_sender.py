@@ -61,7 +61,7 @@ class TestSender:
         smtp_email_send("Test message", "TestLogger")
 
         smtp_instance = FakeSMTP.last_instance
-        assert smtp_instance is not None, "FakeSMTP wurde nicht instanziiert."
+        assert smtp_instance is not None, "FakeSMTP instance was not created."
 
         assert smtp_instance.host == "smtp.example.com"
         assert smtp_instance.port == 465
@@ -84,7 +84,7 @@ class TestSender:
             isinstance(part, MIMEText) and "Test message" in part.get_payload()
             for part in (payload if isinstance(payload, list) else [payload])
         )
-        assert found, "Der Text 'Test message' wurde in der Email nicht gefunden."
+        assert found, "The text 'Test message' was not found in the email."
 
     def test_smtp_email_send_missing_env(
         self, monkeypatch: pytest.MonkeyPatch
@@ -96,7 +96,7 @@ class TestSender:
 
         def fake_smtp(*args, **kwargs):
             raise Exception(
-                "SMTP sollte nicht aufgerufen werden, wenn Variablen fehlen!"
+                "SMTP should not be called when environment variables are missing!"
             )
 
         monkeypatch.setattr(smtplib, "SMTP", fake_smtp)
@@ -104,7 +104,7 @@ class TestSender:
         smtp_email_send("Test message", "TestLogger")
 
         expected_message = "Emails cannot be sent because one or more environment variables are not set!"
-        assert fake_logger.messages, "Es wurde keine Logger-Fehlermeldung erzeugt."
+        assert fake_logger.messages, "No logger error message was generated."
         assert expected_message in fake_logger.messages[0]
 
 
