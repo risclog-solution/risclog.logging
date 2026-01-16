@@ -6,6 +6,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
 from pathlib import Path
+from typing import Any
 
 from risclog.logging.log import HybridLogger, getLogger
 
@@ -16,7 +17,7 @@ def exception_to_string(excp: BaseException) -> str:
     return "".join(pretty) + "\n  {} {}".format(excp.__class__, excp)
 
 
-def format_args(func: any, args: tuple, kwargs: dict) -> tuple:  # type: ignore[type-arg, valid-type]
+def format_args(func: Any, args: tuple, kwargs: dict) -> tuple:  # type: ignore[type-arg]
     param_names = list(inspect.signature(func).parameters.keys())
     formatted_args = [
         f"{name}:{type(value).__name__}={value}"

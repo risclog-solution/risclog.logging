@@ -149,7 +149,7 @@ class HybridLogger:
         function_wrappers = ["sync_wrapper", "async_wrapper", "wrapper"]
 
         def _get_trace_context() -> dict[str, str | int]:
-            """Extrahiert Tracing-Kontext aus dem Call-Stack für bessere Nachverfolgung."""
+            """Extracts tracing context from the call stack for better tracking."""
             stack = inspect.stack()
             # Finde den ersten nicht-wrapper Frame
             for frame_info in stack[2:]:
@@ -168,9 +168,9 @@ class HybridLogger:
             if trace_context:
                 # Ergänze Args mit Trace-Informationen für besseres Debugging
                 trace_info = f"[{trace_context.get('trace_id', 'unknown')}:{trace_context.get('caller_function', '?')}]"
-                args = tuple([f"{trace_info} {arg}" for arg in args])
+                args = tuple(f"{trace_info} {arg}" for arg in args)
             else:
-                args = tuple([f"{arg}" for arg in args])
+                args = tuple(f"{arg}" for arg in args)
             return sync_method(*args, **kwargs)
 
         def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
