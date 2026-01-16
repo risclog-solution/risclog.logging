@@ -36,7 +36,7 @@ def smtp_email_send(
     smtp_password = get_env_case_insensitive("logging_email_smtp_password")
     email_to = get_env_case_insensitive("logging_email_to")
     smtp_server = get_env_case_insensitive("logging_email_smtp_server")
-    smtp_port = int(get_env_case_insensitive("logging_email_smtp_port", "465") or "465")
+    smtp_port = int(get_env_case_insensitive("logging_email_smtp_port") or "465")
 
     if not (smtp_user and smtp_password and email_to and smtp_server):
         from risclog.logging import getLogger
