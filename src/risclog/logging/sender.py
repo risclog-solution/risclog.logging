@@ -21,16 +21,16 @@ def smtp_email_send(
     retry_delay: float = 2.0,
 ) -> bool:
     """
-    Sende eine E-Mail-Benachrichtigung mit Retry-Mechanismus.
+    Send an email notification with retry mechanism.
 
     Args:
-        message: Die zu sendende Nachricht
-        logger_name: Name des Loggers (für Error-Reporting)
-        max_retries: Maximale Anzahl von Retry-Versuchen (Standard: 3)
-        retry_delay: Verzögerung zwischen Retries in Sekunden (Standard: 2.0)
+        message: The message to send
+        logger_name: Name of the logger (for error reporting)
+        max_retries: Maximum number of retry attempts (default: 3)
+        retry_delay: Delay between retries in seconds (default: 2.0)
 
     Returns:
-        bool: True wenn erfolgreich versendet, False sonst
+        bool: True if successfully sent, False otherwise
     """
     smtp_user = get_env_case_insensitive("logging_email_smtp_user")
     smtp_password = get_env_case_insensitive("logging_email_smtp_password")
