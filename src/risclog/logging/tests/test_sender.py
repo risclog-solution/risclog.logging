@@ -43,8 +43,9 @@ class FakeLogger:
     def __init__(self):
         self.messages = []
 
-    def error(self, msg):
+    def error(self, msg, **kwargs):
         self.messages.append(msg)
+        self.last_error_kwargs = kwargs
 
 
 class TestSender:
@@ -106,6 +107,152 @@ class TestSender:
         expected_message = "Emails cannot be sent because one or more environment variables are not set!"
         assert fake_logger.messages, "No logger error message was generated."
         assert expected_message in fake_logger.messages[0]
+
+    def test_smtp_email_send_retry_on_transient_failure(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> types.NoneType:
+        """Test that transient failures are retried and eventually succeed."""
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_USER", "user@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_PASSWORD", "password")
+        monkeypatch.setenv("LOGGING_EMAIL_TO", "to@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_SERVER", "smtp.example.com")
+
+        call_count = [0]
+
+        class RetryFakeSMTP:
+            def __init__(self, host, port):
+                self.host = host
+                self.port = port
+
+            def ehlo(self):
+                pass
+
+            def starttls(self):
+                pass
+
+            def login(self, user, password):
+                pass
+
+            def send_message(self, message):
+                call_count[0] += 1
+                if call_count[0] < 2:
+                    raise smtplib.SMTPException("Temporary failure")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                pass
+
+        monkeypatch.setattr(smtplib, "SMTP", RetryFakeSMTP)
+
+        result = smtp_email_send(
+            "Test message", "TestLogger", max_retries=3, retry_delay=0.01
+        )
+
+        assert result is True, "Should succeed after retry"
+        assert call_count[0] == 2, "Should have tried exactly 2 times"
+
+    def test_smtp_email_send_failure_after_max_retries(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> types.NoneType:
+        """Test that function returns False after exhausting max_retries."""
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_USER", "user@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_PASSWORD", "password")
+        monkeypatch.setenv("LOGGING_EMAIL_TO", "to@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_SERVER", "smtp.example.com")
+
+        fake_logger = FakeLogger()
+        fake_logging_module = types.ModuleType("risclog.logging")
+        fake_logging_module.getLogger = lambda name: fake_logger
+        monkeypatch.setitem(sys.modules, "risclog.logging", fake_logging_module)
+
+        call_count = [0]
+
+        class FailingFakeSMTP:
+            def __init__(self, host, port):
+                self.host = host
+                self.port = port
+
+            def ehlo(self):
+                pass
+
+            def starttls(self):
+                pass
+
+            def login(self, user, password):
+                pass
+
+            def send_message(self, message):
+                call_count[0] += 1
+                raise OSError("Network error")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                pass
+
+        monkeypatch.setattr(smtplib, "SMTP", FailingFakeSMTP)
+
+        result = smtp_email_send(
+            "Test message", "TestLogger", max_retries=3, retry_delay=0.01
+        )
+
+        assert result is False, "Should return False after max retries exhausted"
+        assert call_count[0] == 3, "Should have tried exactly 3 times"
+
+    def test_smtp_email_send_logs_error_after_max_retries(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> types.NoneType:
+        """Test that error is logged after max_retries exhausted."""
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_USER", "user@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_PASSWORD", "password")
+        monkeypatch.setenv("LOGGING_EMAIL_TO", "to@example.com")
+        monkeypatch.setenv("LOGGING_EMAIL_SMTP_SERVER", "smtp.example.com")
+
+        fake_logger = FakeLogger()
+        fake_logging_module = types.ModuleType("risclog.logging")
+        fake_logging_module.getLogger = lambda name: fake_logger
+        monkeypatch.setitem(sys.modules, "risclog.logging", fake_logging_module)
+
+        class FailingFakeSMTP:
+            def __init__(self, host, port):
+                pass
+
+            def ehlo(self):
+                pass
+
+            def starttls(self):
+                pass
+
+            def login(self, user, password):
+                pass
+
+            def send_message(self, message):
+                raise smtplib.SMTPException("SMTP server error")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                pass
+
+        monkeypatch.setattr(smtplib, "SMTP", FailingFakeSMTP)
+
+        result = smtp_email_send(
+            "Test message", "TestLogger", max_retries=2, retry_delay=0.01
+        )
+
+        assert result is False, "Should return False after max retries"
+        assert len(fake_logger.messages) > 0, "Should have logged an error"
+        error_message = fake_logger.messages[0]
+        assert "Failed to send email after 2 attempts" in error_message
+        assert hasattr(fake_logger, "last_error_kwargs"), (
+            "Should have stored error kwargs"
+        )
+        assert "error" in fake_logger.last_error_kwargs
+        assert fake_logger.last_error_kwargs["last_attempt"] == 2
 
 
 class TestCaseInsensitive:
