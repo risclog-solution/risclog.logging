@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-"""Einfaches Testskript zum Ausprobieren des Logger."""
-
 import logging
 from risclog.logging import getLogger, log_decorator
 

@@ -1,4 +1,3 @@
-#!/Users/riscms/repos/Risclog/risclog.logging/.appenv/current/bin/python
 """Einfaches Test-Skript für den risclog Logger."""
 
 import logging
