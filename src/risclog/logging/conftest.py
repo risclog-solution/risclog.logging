@@ -14,10 +14,10 @@ from risclog.logging import getLogger
 def clear_env(monkeypatch):
     """Stellt sicher, dass die für den Test relevanten Environment-Variablen nicht gesetzt sind."""
     env_vars = [
-        'LOGGING_EMAIL_SMTP_USER',
-        'LOGGING_EMAIL_SMTP_PASSWORD',
-        'LOGGING_EMAIL_TO',
-        'LOGGING_EMAIL_SMTP_SERVER',
+        "LOGGING_EMAIL_SMTP_USER",
+        "LOGGING_EMAIL_SMTP_PASSWORD",
+        "LOGGING_EMAIL_TO",
+        "LOGGING_EMAIL_SMTP_SERVER",
     ]
     for var in env_vars:
         monkeypatch.delenv(var, raising=False)
@@ -25,9 +25,9 @@ def clear_env(monkeypatch):
 
 @pytest.fixture
 def logger1():
-    return getLogger('test_logger_1')
+    return getLogger("test_logger_1")
 
 
 @pytest.fixture
 def logger2():
-    return getLogger('test_logger_2')
+    return getLogger("test_logger_2")

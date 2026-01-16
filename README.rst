@@ -9,23 +9,49 @@ risclog.logging
 .. image:: https://img.shields.io/pypi/v/risclog.logging.svg
    :target: https://pypi.python.org/pypi/risclog.logging
 
-The **risclog.logging** package provides a comprehensive solution for structured logging in Python
-applications. It combines Python’s built-in logging module with [structlog](https://www.structlog.org/)
-to generate detailed and formatted log entries. In this new release, the API has been updated to use:
+.. image:: https://img.shields.io/pypi/pyversions/risclog.logging.svg
+   :target: https://pypi.python.org/pypi/risclog.logging
+   :alt: Python Versions
 
-- **`getLogger`** – the new factory function for creating logger instances (the legacy ``get_logger`` is deprecated).
-- **`log_decorator`** – a decorator for automatic logging of function calls, including arguments, return values,
-  durations, and exceptions.
+.. image:: https://img.shields.io/badge/license-MIT-blue.svg
+   :target: https://github.com/risclog-solution/risclog.logging/blob/main/LICENSE
+
+**risclog.logging** is a comprehensive structured logging solution for Python applications. It combines Python's
+built-in ``logging`` module with `structlog <https://www.structlog.org/>`_ to provide powerful, flexible logging
+with support for both synchronous and asynchronous code.
+
+**Key Features:**
+
+- **`getLogger`** – Modern factory function for creating logger instances (legacy ``get_logger`` deprecated)
+- **`log_decorator`** – Automatic function logging with execution time, arguments, return values, and exception handling
+- **Structured logging** – Rich, contextual log entries with automatic JSON serialization
+- **Async/Sync support** – Unified API for both synchronous and asynchronous code
+- **File & Console output** – Flexible handler configuration
+- **Email notifications** – Optional exception alerts via SMTP (with email configuration)
+- **Enhanced tracebacks** – Beautiful, colored exception display via Rich
 
 Features
 ========
 
-- **Structured logging:** Combines standard logging with structlog for rich, contextual logs.
-- **Synchronous and asynchronous logging:** Use the same API in both sync and async environments.
-- **Automatic function logging:** Use the ``log_decorator`` to automatically log function calls and errors.
-- **Email notifications:** Optionally send email notifications on exceptions (requires setting specific environment variables).
-- **Rich traceback:** Enhanced exception display is provided by default via Rich.
-- **Flexible configuration:** Programmatically set log levels and add handlers (e.g. file handlers).
+- **Structured logging:** Combines standard logging with structlog for rich, contextual logs
+- **Synchronous and asynchronous logging:** Unified API works seamlessly in both environments
+- **Automatic function logging:** Use ``@log_decorator`` to automatically capture function execution details:
+
+  - Function arguments and their types
+  - Return values
+  - Execution duration (in milliseconds)
+  - Exception stack traces and details
+
+- **Email notifications:** Optionally send SMTP email alerts when decorated functions raise exceptions
+- **Rich tracebacks:** Enhanced exception display with colors and source code context
+- **Flexible configuration:**
+
+  - Set log levels per logger
+  - Add file handlers with custom formatters
+  - Configure via environment variables (``LOG_LEVEL``, ``LOG_EXCLUDED_LOGGERS``, etc.)
+  - Auto-filters verbose library logs (uvicorn, watchfiles, etc.)
+
+- **Production-ready:** Type hints, comprehensive tests, and battle-tested in production applications
 
 Installation
 ============
@@ -39,137 +65,188 @@ Install via pip:
 Configuration and Usage
 =======================
 
-Creating a Logger
------------------
-
-Use the new ``getLogger`` function to obtain a logger. (Note that the old ``get_logger`` is now deprecated.)
+Quick Start
+-----------
 
 .. code-block:: python
 
     from risclog.logging import getLogger
 
     logger = getLogger(__name__)
-    logger.set_level("DEBUG")  # You can pass a string (e.g. "DEBUG") or a logging constant (logging.DEBUG)
+    logger.set_level("DEBUG")
 
-You can also add a file handler to write warnings and above to a file:
+    # Log messages
+    logger.info("Application started")
+    logger.warning("Something might be wrong", user_id=42)
+    logger.error("An error occurred", error_code=500)
+
+Creating a Logger
+-----------------
+
+Use the ``getLogger`` function to obtain a logger instance:
 
 .. code-block:: python
 
-    file_logger = logger.add_file_handler('test.log', level=logging.WARNING)
+    from risclog.logging import getLogger
+
+    logger = getLogger(__name__)
+
+    # Set log level (accepts string or logging constant)
+    logger.set_level("DEBUG")  # or logging.DEBUG
+
+    # Add file handler
+    logger.add_file_handler('app.log', level=logging.DEBUG)
 
 Logging Messages
 ----------------
 
-Log messages synchronously:
+**Synchronous logging:**
 
 .. code-block:: python
 
-    logger.debug("This is a debug message")
-    logger.info("This is an info message")
-    logger.warning("This is a warning message")
-    logger.error("This is an error message")
-    logger.critical("This is a critical message")
+    logger.debug("Debug message")
+    logger.info("Info message", user_id=42, action="login")
+    logger.warning("Warning message", retry_count=3)
+    logger.error("Error message", error_code=500)
+    logger.critical("Critical failure", severity="high")
 
-Or asynchronously (e.g. within async functions):
+**Asynchronous logging:**
 
 .. code-block:: python
 
     await logger.debug("Async debug message")
-    await logger.info("Async info message")
-    # etc.
+    await logger.info("Async info message", user_id=42)
+    # All log methods support both sync and async calls
 
 Automatic Function Logging with Decorators
 --------------------------------------------
 
-The ``log_decorator`` automatically logs function calls (including arguments, execution time, results,
-and any exceptions). It works with both synchronous and asynchronous functions.
+The ``@log_decorator`` automatically logs function execution with comprehensive details:
+
+**Synchronous functions:**
 
 .. code-block:: python
 
-    from risclog.logging import getLogger, log_decorator
-    import asyncio
-
-    logger = getLogger(__name__)
-    logger.set_level("DEBUG")
+    from risclog.logging import log_decorator
 
     @log_decorator
-    def sync_function(a, b):
+    def calculate_sum(a: int, b: int) -> int:
+        """Calculate sum of two numbers."""
         result = a + b
         return result
 
+    result = calculate_sum(10, 20)
+    # Logs: [Decorator start: calculate_sum]
+    # Logs: [Decorator success: calculate_sum] duration=0.00123sec result=30
+
+**Asynchronous functions:**
+
+.. code-block:: python
+
     @log_decorator
-    async def async_function(a, b):
-        await asyncio.sleep(1)
-        result = a + b
-        return result
+    async def fetch_data(user_id: int) -> dict:
+        """Fetch user data from API."""
+        await asyncio.sleep(1)  # Simulate API call
+        return {"id": user_id, "name": "Alice"}
+
+    data = await fetch_data(123)
+    # Logs: [Decorator start: fetch_data] args=('user_id:int=123',)
+    # Logs: [Decorator success: fetch_data] duration=1.00234sec result={'id': 123, 'name': 'Alice'}
+
+**Error handling with decorator:**
+
+.. code-block:: python
+
+    @log_decorator
+    def risky_operation(value: int) -> float:
+        """Operation that might fail."""
+        return 100 / value  # Will raise ZeroDivisionError if value=0
+
+    try:
+        risky_operation(0)
+    except ZeroDivisionError:
+        pass
+    # Logs: [Decorator error in risky_operation] error='division by zero'
 
 Using the Decorator in Classes
 ------------------------------
 
-You can use the decorator on class methods as well. For example:
+Use ``@log_decorator`` on class methods:
 
 .. code-block:: python
 
     from risclog.logging import getLogger, log_decorator
-    import asyncio
 
-    class AwesomeClass:
+    class UserService:
         def __init__(self):
-            self.logger = getLogger("AwesomeLogger")
+            self.logger = getLogger(__name__)
 
         @log_decorator
-        def class_sync_add(self, a: int, b: int):
-            self.logger.warn("Debugging class_sync_add", a=a, b=b)
-            self.logger.info("Information in class_sync_add", a=a, b=b)
-            self.logger.info("class_sync_add called", a=a, b=b)
-            return a + b
+        def get_user(self, user_id: int) -> dict:
+            """Retrieve user by ID."""
+            self.logger.info("Fetching user", user_id=user_id)
+            # Simulate database lookup
+            return {"id": user_id, "name": "John Doe", "email": "john@example.com"}
 
         @log_decorator
-        async def class_async_add(self, a: int, b: int, c: dict):
-            await self.logger.info("class_async_add called", a=a, b=b)
-            await self.logger.info("Dependency class name:", c=c['dependency'].__class__.__name__)
-            await asyncio.sleep(1)
-            result = a + b
-            await self.logger.info("class_async_add result", result=result)
-            return result
+        async def update_user_async(self, user_id: int, name: str) -> dict:
+            """Update user asynchronously."""
+            await self.logger.info("Updating user", user_id=user_id, name=name)
+            await asyncio.sleep(0.5)  # Simulate API call
+            return {"id": user_id, "name": name, "updated": True}
 
-    class DependencyClass:
-        pass
+    # Usage
+    service = UserService()
+    user = service.get_user(42)
+    # Logs: [Decorator start: get_user] args=('self:UserService=...', 'user_id:int=42')
+    # Logs: Fetching user (manual log)
+    # Logs: [Decorator success: get_user] result={'id': 42, 'name': 'John Doe', 'email': 'john@example.com'}
 
 Email Notification on Exceptions
 ---------------------------------
 
-To enable email notifications when an exception occurs, pass ``send_email=True`` to the decorator.
-**Remember:** The following environment variables must be set:
+To send email alerts when a decorated function raises an exception, use ``send_email=True``.
 
-- ``logging_email_smtp_user``
-- ``logging_email_smtp_password``
-- ``logging_email_to``
-- ``logging_email_smtp_server``
+**Required environment variables:**
+
+.. code-block:: bash
+
+    export logging_email_smtp_user="your-email@gmail.com"
+    export logging_email_smtp_password="your-app-password"
+    export logging_email_smtp_server="smtp.gmail.com"
+    export logging_email_to="admin@example.com"
+
+**Usage:**
 
 .. code-block:: python
 
     @log_decorator(send_email=True)
-    def function_with_exception():
-        # Your code that might raise an exception
+    def critical_operation():
+        """This function will send email on exception."""
+        # Your code
         ...
+
+When an exception occurs, the logger will automatically send an email notification
+with the full error traceback.
 
 Rich Traceback Integration
 ---------------------------
 
-The package now automatically installs a beautiful traceback handler via Rich:
+The package uses `Rich <https://rich.readthedocs.io/>`_ for beautiful exception display. Rich tracebacks
+include syntax highlighting, source code context, and improved readability:
 
 .. code-block:: python
 
     from rich import traceback
-    traceback.install()
+    traceback.install()  # Install the Rich traceback handler
 
-This provides enhanced, colored, and more informative tracebacks when errors occur.
+    # Now all exceptions will be displayed with Rich formatting
+    1 / 0  # Beautiful traceback with colors and context
 
 Full Example
 ============
 
-Below is a complete example demonstrating the usage of the new logger, decorators, and asynchronous logging.
+Here's a complete example demonstrating logging with both sync and async functions:
 
 .. code-block:: python
 
@@ -180,143 +257,191 @@ Below is a complete example demonstrating the usage of the new logger, decorator
     # Configure logger
     logger = getLogger(__name__)
     logger.set_level(logging.DEBUG)
-    logger.add_file_handler('test.log', level=logging.WARNING)
+    logger.add_file_handler('app.log', level=logging.DEBUG)
 
+    # Simple sync function
     @log_decorator
-    def sync_function(a, b):
+    def calculate(a: int, b: int) -> int:
+        logger.debug("Performing calculation", a=a, b=b)
         result = a + b
         return result
 
+    # Simple async function
     @log_decorator
-    async def async_function(a, b):
-        await asyncio.sleep(1)
-        result = a + b
-        return result
+    async def fetch_user(user_id: int) -> dict:
+        await logger.info("Fetching user from API", user_id=user_id)
+        await asyncio.sleep(1)  # Simulate API latency
+        return {"id": user_id, "name": "John"}
 
-    class AwesomeClass:
+    # Class-based logging
+    class DataProcessor:
         def __init__(self):
-            self.logger = getLogger("AwesomeLogger")
+            self.logger = getLogger(__name__)
 
         @log_decorator
-        def class_sync_add(self, a: int, b: int):
-            self.logger.warn("Debugging class_sync_add", a=a, b=b)
-            self.logger.info("Information in class_sync_add", a=a, b=b)
-            self.logger.info("class_sync_add called", a=a, b=b)
-            return a + b
+        def process(self, data: list) -> int:
+            self.logger.info("Processing data", count=len(data))
+            total = sum(data)
+            self.logger.info("Processing complete", total=total)
+            return total
 
         @log_decorator
-        async def class_async_add(self, a: int, b: int, c: dict):
-            await self.logger.info("class_async_add called", a=a, b=b)
-            await self.logger.info("Dependency class name:", c=c['dependency'].__class__.__name__)
-            await asyncio.sleep(1)
-            result = a + b
-            await self.logger.info("class_async_add result", result=result)
-            return result
+        async def process_async(self, data: list) -> int:
+            await self.logger.info("Async processing", count=len(data))
+            await asyncio.sleep(0.5)
+            total = sum(data)
+            return total
 
-    class DependencyClass:
-        pass
-
-    @log_decorator
-    def sample_function(*args, **kwargs):
-        logger.debug("Debugging sample_function", args=args, kwargs=kwargs)
-        logger.info("Called with args", args=args)
-        logger.info("Called with kwargs", kwargs=kwargs)
-
-        result = {'sum_args': sum(args) if args else 0, **kwargs}
-        logger.info("Result", result=result)
-        if result['sum_args'] > 5:
-            logger.warning("Sum of arguments is greater than 5", sum=result['sum_args'])
-
-        try:
-            1 / 0
-        except ZeroDivisionError:
-            logger.error("Division by zero error occurred during calculation. Check the input values",
-                         exc_info=True)
-        return result
-
-    @log_decorator
-    def sample_critical_function(*args, **kwargs):
-        logger.critical("Critical issue in sample_critical_function", args=args, kwargs=kwargs)
-        raise RuntimeError("Simulated critical problem")
-
+    # Main execution
     async def main():
-        dc = DependencyClass()
-        ac = AwesomeClass()
-        sync_result = sync_function(3, 5)
-        await async_function(4, 6)
-        ac.class_sync_add(6, 7)
-        await ac.class_async_add(8, 9, {'dependency': dc})
-        sample_function(1, 2, 3, name='Alice', age=30)
+        # Sync calls
+        logger.info("Application started")
+        result = calculate(5, 10)
+        logger.info("Calculation result", result=result)
 
-        try:
-            sample_critical_function(10, 20)
-        except RuntimeError:
-            pass
+        # Async calls
+        user = await fetch_user(123)
+        logger.info("User fetched", user=user)
 
-    if __name__ == '__main__':
-        logger.info("Starting main function")
-        sync_result = sync_function(3, 5)
+        # Class-based calls
+        processor = DataProcessor()
+        total = processor.process([1, 2, 3, 4, 5])
+        logger.info("Processing complete", total=total)
+
+        total_async = await processor.process_async([10, 20, 30])
+        logger.info("Async processing complete", total=total_async)
+
+    if __name__ == "__main__":
         asyncio.run(main())
-
-        # Trigger an exception to test rich traceback formatting:
-        raise ValueError("Test exception")
 
 Example Output
 ==============
 
-Below is an example output generated by running the new logger code:
+When running the example above, you'll see output similar to this:
 
 .. code-block:: bash
 
-    2025-02-07 13:23:18 [info     ] [4311754480 Decorator start: sync_function] [__main__] _function=sync_function _script=all_in_one.py args=('a:int=3', 'b:int=5') kwargs={}
-    2025-02-07 13:23:18 [info     ] [4311754480 Decorator success: sync_function] [__main__] _function=sync_function _script=all_in_one.py duration=0.00044sec result=8
-    2025-02-07 13:23:19 [info     ] [4311754480 Decorator start: sync_function] [__main__] _function=sync_function _script=all_in_one.py args=('a:int=3', 'b:int=5') kwargs={}
-    2025-02-07 13:23:19 [info     ] [4311754480 Decorator success: sync_function] [__main__] _function=sync_function _script=all_in_one.py duration=0.01749sec result=8
-    2025-02-07 13:23:19 [info     ] [4311755376 Decorator start: async_function] [__main__] _function=async_function _script=all_in_one.py args=('a:int=4', 'b:int=6') kwargs={}
-    2025-02-07 13:23:20 [info     ] [4311755376 Decorator success: async_function] [__main__] _function=async_function _script=all_in_one.py duration=1.00177sec result=10
-    2025-02-07 13:23:20 [info     ] [4312228144 Decorator start: class_sync_add] [__main__] _function=class_sync_add _script=all_in_one.py args=('self:AwesomeClass=<__main__.AwesomeClass object at 0x10310b110>', 'a:int=6', 'b:int=7') kwargs={}
-    2025-02-07 13:23:20 [warning  ] [4312228144 Debugging class_sync_add] [AwesomeLogger] a=6 b=7
-    2025-02-07 13:23:20 [info     ] [4312228144 Information in class_sync_add] [AwesomeLogger] a=6 b=7
-    2025-02-07 13:23:20 [info     ] [4312228144 class_sync_add called] [AwesomeLogger] a=6 b=7
-    2025-02-07 13:23:20 [info     ] [4312228144 Decorator success: class_sync_add] [__main__] _function=class_sync_add _script=all_in_one.py duration=0.00189sec result=13
-    2025-02-07 13:23:20 [info     ] [4312228528 Decorator start: class_async_add] [__main__] _function=class_async_add _script=all_in_one.py args=('self:AwesomeClass=<__main__.AwesomeClass object at 0x10310b110>', 'a:int=8', 'b:int=9', "c:dict={'dependency': <__main__.DependencyClass object at 0x10310af90>}") kwargs={}
-    2025-02-07 13:23:20 [info     ] [4312228528 class_async_add called] [AwesomeLogger] a=8 b=9
-    2025-02-07 13:23:20 [info     ] [4312228528 dependency class name:] [AwesomeLogger] c=DependencyClass
-    2025-02-07 13:23:21 [info     ] [4312228528 class_async_add result] [AwesomeLogger] result=17
-    2025-02-07 13:23:21 [info     ] [4312228528 Decorator success: class_async_add] [__main__] _function=class_async_add _script=all_in_one.py duration=1.00326sec result=17
-    2025-02-07 13:23:21 [info     ] [4312229040 Decorator start: sample_function] [__main__] _function=sample_function _script=all_in_one.py args=('args:int=1', 'kwargs:int=2', 'name:str=Alice', 'age:int=30') kwargs={'name': 'Alice', 'age': 30}
-    2025-02-07 13:23:21 [debug    ] [4312229040 Debugging sample_function] [__main__] args=(1, 2, 3) kwargs={'name': 'Alice', 'age': 30}
-    2025-02-07 13:23:21 [info     ] [4312229040 Called with args]  [__main__] args=(1, 2, 3)
-    2025-02-07 13:23:21 [info     ] [4312229040 Called with kwargs] [__main__] kwargs={'name': 'Alice', 'age': 30}
-    2025-02-07 13:23:21 [info     ] [4312229040 Result]            [__main__] result={'sum_args': 6, 'name': 'Alice', 'age': 30}
-    2025-02-07 13:23:21 [warning  ] [4312229040 Sum of arguments is greater than 5] [__main__] sum=6
-    2025-02-07 13:23:21 [error    ] [4312229040 Division by zero error occurred during calculation. Check the input values] [__main__]
-    2025-02-07 13:23:21 [info     ] [4312229040 Decorator success: sample_function] [__main__] _function=sample_function _script=all_in_one.py duration=0.00297sec result={'sum_args': 6, 'name': 'Alice', 'age': 30}
-    2025-02-07 13:23:21 [info     ] [4312158640 Decorator start: sample_critical_function] [__main__] _function=sample_critical_function _script=all_in_one.py args=('args:int=10', 'kwargs:int=20') kwargs={}
-    2025-02-07 13:23:21 [critical ] [4312158640 Critical issue in sample_critical_function] [__main__] args=(10, 20) kwargs={}
-    2025-02-07 13:23:21 [error    ] ('[4312158640 Decorator error in sample_critical_function]',) [__main__] _function=sample_critical_function _script=all_in_one.py error='Simuliertes kritisches Problem'
+    2026-01-16 12:16:13 [info] Application started
+    2026-01-16 12:16:13 [info] [4301639536 Decorator start: calculate] _function=calculate _script=example.py args=('a:int=5', 'b:int=10') kwargs={}
+    2026-01-16 12:16:13 [debug] Performing calculation a=5 b=10
+    2026-01-16 12:16:13 [info] [4301639536 Decorator success: calculate] _function=calculate result=15 duration=0.00123sec
+    2026-01-16 12:16:13 [info] Calculation result result=15
+    2026-01-16 12:16:13 [info] [4311754480 Decorator start: fetch_user] _function=fetch_user args=('user_id:int=123',)
+    2026-01-16 12:16:13 [info] Fetching user from API user_id=123
+    2026-01-16 12:16:14 [info] [4311754480 Decorator success: fetch_user] _function=fetch_user result={'id': 123, 'name': 'John'} duration=1.00234sec
+    2026-01-16 12:16:14 [info] User fetched user={'id': 123, 'name': 'John'}
+    2026-01-16 12:16:14 [info] [4312228144 Decorator start: process] _function=process args=('self:DataProcessor=...', 'data:list=[1, 2, 3, 4, 5]')
+    2026-01-16 12:16:14 [info] Processing data count=5
+    2026-01-16 12:16:14 [info] Processing complete total=15
+    2026-01-16 12:16:14 [info] [4312228144 Decorator success: process] _function=process result=15 duration=0.00098sec
+    2026-01-16 12:16:14 [info] Processing complete total=15
 
 Running Tests
 =============
 
-To run the tests for this package, simply execute:
+To run the tests for this package, execute:
 
 .. code-block:: bash
 
-    ./pytest
+    pytest
+
+Or with verbose output:
+
+.. code-block:: bash
+
+    pytest -v
+
+Development
+===========
+
+To set up a development environment, clone the repository and install in editable mode:
+
+.. code-block:: bash
+
+    git clone https://github.com/risclog-solution/risclog.logging
+    cd risclog.logging
+    pip install -e .[dev]
+    pytest
+
+Troubleshooting
+===============
+
+**Logs not showing in console:**
+
+If you see logs written to files but not in the console, ensure you've added a console handler:
+
+.. code-block:: python
+
+    import logging
+
+    # Add console output
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+    console_handler.setFormatter(formatter)
+    logging.getLogger().addHandler(console_handler)
+
+**Email notifications not working:**
+
+Verify all required environment variables are set:
+
+.. code-block:: bash
+
+    echo $logging_email_smtp_user
+    echo $logging_email_smtp_password
+    echo $logging_email_smtp_server
+    echo $logging_email_to
+
+**Performance considerations:**
+
+- The ``@log_decorator`` adds minimal overhead (typically < 1ms)
+- File I/O is buffered by Python's logging module
+- For high-throughput applications, consider using async logging
+
+Migration from Old API
+======================
+
+If you're using the old ``get_logger`` function (deprecated), migrate to the new ``getLogger``:
+
+**Old code:**
+
+.. code-block:: python
+
+    from risclog.logging import get_logger  # Deprecated
+    logger = get_logger(__name__)
+
+**New code:**
+
+.. code-block:: python
+
+    from risclog.logging import getLogger  # Current
+    logger = getLogger(__name__)
+
+The functionality is the same, but ``getLogger`` is the recommended approach.
 
 Credits
 =======
 
-This package was created using Cookiecutter_ and the
-`risclog-solution/risclog-cookiecutter-pypackage`_ project template.
+This package was created using `Cookiecutter <https://github.com/audreyr/cookiecutter>`_ and the
+`risclog-solution/risclog-cookiecutter-pypackage <https://github.com/risclog-solution/risclog-cookiecutter-pypackage>`_ project template.
 
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`risclog-solution/risclog-cookiecutter-pypackage`: https://github.com/risclog-solution/risclog-cookiecutter-pypackage
+License
+=======
 
-Additional Notes
-================
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-- The legacy functions ``get_logger`` and the method ``decorator`` are deprecated and will be removed in version 1.3.0.
-- For advanced configuration (custom processors, multiple handlers, etc.), please refer to the documentation.
-- The package automatically configures loggers to filter out excessive log messages from libraries like Uvicorn and asyncio.
+Contributing
+============
+
+Contributions are welcome! Please see CONTRIBUTING.rst for guidelines.
+
+Support
+=======
+
+For issues, questions, or feature requests, please open an issue on
+`GitHub <https://github.com/risclog-solution/risclog.logging/issues>`_.
+
+Changelog
+=========
+
+See CHANGES.rst for version history and updates.

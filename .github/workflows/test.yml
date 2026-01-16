@@ -16,7 +16,7 @@ jobs:
     uses: risclog-solution/gha_workflow_templates/.github/workflows/pytest_appenv.yml@master
     with:
       versions: >-
-        ["3.10","3.11"]
+        ["3.13","3.12"]
     secrets:
       PIPCONF: ${{ secrets.PIPCONF }}
   coverage:

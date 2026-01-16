@@ -5,7 +5,10 @@ include HISTORY.rst
 include LICENSE
 include README.rst
 include src/risclog/logging/alembic/README
+include Makefile
+include mypy.ini
 
+recursive-include scripts *.py
 recursive-include tests *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
