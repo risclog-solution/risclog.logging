@@ -78,4 +78,4 @@ def smtp_email_send(
                 )
                 return False
 
-    return False
+    raise AssertionError("Email sending failed unexpectedly")
