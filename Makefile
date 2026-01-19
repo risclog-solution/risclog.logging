@@ -8,7 +8,7 @@ APPENV_CACHE_DIR := .vendor
 APPENV_CACHE_FILE := $(APPENV_CACHE_DIR)/appenv.py
 
 # Root-level script names to overwrite *if they already exist*.
-OVERWRITE_IF_PRESENT := alembic pytest appenv uvicorn
+OVERWRITE_IF_PRESENT := alembic pytest appenv uvicorn main
 
 .PHONY: help appenv-fetch appenv-overwrite appenv-sync appenv-diff
 
