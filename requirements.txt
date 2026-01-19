@@ -1,2 +1,2 @@
-# appenv-python-preference: 3.10
+# appenv-python-preference: 3.13,3.12
 -e .[test,doc]

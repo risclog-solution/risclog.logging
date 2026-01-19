@@ -1,13 +1,15 @@
-# appenv-requirements-hash: 5449b7224ffd6bc662d68ab172258a140f8c730e68dd63da5d0409b74b5a6fb1
+# appenv-requirements-hash: 185a14d73548744ed8e73f172bc35b4670d12628f77fb8a26e23b3614c1f123d
 -e .[test,doc]
 Pygments==2.19.2
-anyio==4.12.0
-backports.asyncio.runner==1.2.0
-certifi==2025.11.12
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.12.1
+certifi==2026.1.4
 charset-normalizer==3.4.4
-coverage==7.12.0
-exceptiongroup==1.3.1
+click==8.3.1
+coverage==7.13.1
 execnet==2.1.2
+fastapi==0.128.0
 flake8==3.9.2
 h11==0.16.0
 httpcore==1.0.9
@@ -19,6 +21,8 @@ mock==5.2.0
 packaging==25.0
 pluggy==1.6.0
 pycodestyle==2.7.0
+pydantic==2.12.5
+pydantic_core==2.41.5
 pyflakes==2.3.1
 pytest-asyncio==1.3.0
 pytest-cache==1.0
@@ -26,11 +30,14 @@ pytest-cov==7.0.0
 pytest-flake8==1.1.0
 pytest-rerunfailures==16.1
 pytest-sugar==1.1.1
-pytest==9.0.1
+pytest==9.0.2
 requests==2.32.5
-risclog.logging==1.3.3.dev0
+stamina==25.2.0
+starlette==0.50.0
 structlog==25.5.0
-termcolor==3.2.0
-tomli==2.3.0
+tenacity==9.1.2
+termcolor==3.3.0
+typing-inspection==0.4.2
 typing_extensions==4.15.0
-urllib3==2.5.0
+urllib3==2.6.3
+uvicorn==0.40.0

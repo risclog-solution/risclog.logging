@@ -3,10 +3,21 @@ Change log for risclog.logging
 ==============================
 
 
-1.3.4 (unreleased)
+2.0.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Add comprehensive type hints to core logging modules for better IDE support and type safety
+
+- Improve mypy configuration to exclude examples, scripts, and docs folders
+
+- Update and expand README.rst with detailed usage examples, troubleshooting guide, and migration instructions
+
+- Add executable example scripts (test_logger.py, api.py) demonstrating logger functionality
+
+- Fix RST formatting issues (backticks) in CHANGES.rst and CONTRIBUTING.rst
+
+- Enhance .pre-commit-config.yaml to properly exclude non-source files from mypy checks
+
 
 
 1.3.3 (2025-12-04)
@@ -30,15 +41,15 @@ Change log for risclog.logging
 1.3.0 (2025-02-06)
 ==================
 
-- added `add_file_handler` method to add a file handler to a logger
+- added ``add_file_handler`` method to add a file handler to a logger
 
-- added `set_level` method to set the level of a logger
+- added ``set_level`` method to set the level of a logger
 
 - Fix log decorator mixed async sync Problem
 
-- old `decorator` function is now deprecated
+- old ``decorator`` function is now deprecated
 
-- old `get_logger` function is now deprecated
+- old ``get_logger`` function is now deprecated
 
 
 1.2.1 (2024-09-20)
@@ -68,7 +79,7 @@ Change log for risclog.logging
 1.0.1 (2024-08-06)
 ==================
 
-- Fix `classifiers` and README structure.
+- Fix ``classifiers`` and README structure.
 
 
 1.0 (2024-08-06)
