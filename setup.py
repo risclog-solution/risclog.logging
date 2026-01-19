@@ -31,6 +31,7 @@ setup(
     install_requires=[
         # Add your dependencies here
         "structlog",
+        "stamina",
     ],
     extras_require={
         "docs": [
@@ -63,6 +64,6 @@ setup(
     namespace_packages=["risclog"],
     package_dir={"": "src"},
     url="https://github.com/risclog-solution/risclog.logging",
-    version="1.3.4.dev0",
+    version="2.0.0.dev0",
     zip_safe=False,
 )

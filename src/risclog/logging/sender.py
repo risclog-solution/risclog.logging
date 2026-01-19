@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import os
 import smtplib
-import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+import stamina
 
 
 def get_env_case_insensitive(varname: str, default: str | None = None) -> str | None:
@@ -21,7 +22,7 @@ def smtp_email_send(
     retry_delay: float = 2.0,
 ) -> bool:
     """
-    Send an email notification with retry mechanism.
+    Send an email notification with retry mechanism using stamina.
 
     Args:
         message: The message to send
@@ -54,28 +55,24 @@ def smtp_email_send(
     email_message["Subject"] = f"Error in {logger_name}"
     email_message.attach(MIMEText(message, "plain"))
 
-    # Retry-Mechanismus
-    for attempt in range(1, max_retries + 1):
-        try:
-            with smtplib.SMTP(host=smtp_server, port=smtp_port) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.login(smtp_user, smtp_password)
-                smtp.send_message(email_message)
-            return True
-        except (smtplib.SMTPException, OSError) as e:
-            if attempt < max_retries:
-                time.sleep(retry_delay)
-                continue
-            else:
-                from risclog.logging import getLogger
+    # Retry-Mechanismus mit Stamina
+    @stamina.retry(on=(smtplib.SMTPException, OSError), attempts=max_retries)  # type: ignore[misc]
+    def send_email_with_retry() -> None:
+        with smtplib.SMTP(host=smtp_server, port=smtp_port) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(smtp_user, smtp_password)
+            smtp.send_message(email_message)
 
-                logger = getLogger(logger_name)
-                logger.error(
-                    f"Failed to send email after {max_retries} attempts",
-                    error=str(e),
-                    last_attempt=attempt,
-                )
-                return False
+    try:
+        send_email_with_retry()
+        return True
+    except Exception as e:
+        from risclog.logging import getLogger
 
-    raise AssertionError("Email sending failed unexpectedly")
+        logger = getLogger(logger_name)
+        logger.error(
+            f"Failed to send email after {max_retries} attempts",
+            error=str(e),
+        )
+        return False

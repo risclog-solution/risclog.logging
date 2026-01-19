@@ -288,7 +288,6 @@ class TestSender:
             "Should have stored error kwargs"
         )
         assert "error" in fake_logger.last_error_kwargs
-        assert fake_logger.last_error_kwargs["last_attempt"] == 2
 
 
 class TestCaseInsensitive:

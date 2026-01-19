@@ -32,8 +32,10 @@ pytest-rerunfailures==16.1
 pytest-sugar==1.1.1
 pytest==9.0.2
 requests==2.32.5
+stamina==25.2.0
 starlette==0.50.0
 structlog==25.5.0
+tenacity==9.1.2
 termcolor==3.3.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
