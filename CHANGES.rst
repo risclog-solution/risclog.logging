@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-2.0.0 (unreleased)
+2.0.0 (2026-01-19)
 ==================
 
 - Add comprehensive type hints to core logging modules for better IDE support and type safety
