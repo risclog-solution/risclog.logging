@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import asyncio
 import inspect
 import logging
@@ -9,6 +10,7 @@ from functools import lru_cache, partial, wraps
 
 import structlog
 from structlog.dev import ConsoleRenderer
+from structlog.processors import JSONRenderer
 from structlog.stdlib import ProcessorFormatter
 
 # -------------------------------
@@ -54,6 +56,12 @@ for logger_name in EXCLUDED_LOGGERS:
     logger_obj.handlers.clear()
     logger_obj.propagate = False
     logger_obj.setLevel(log_level)
+
+
+def get_processor() -> structlog.processors.Processor:
+    if sys.stderr.isatty():
+        return ConsoleRenderer(colors=True)
+    return JSONRenderer()
 
 
 # wrapper for structlog.stdlib.filter_by_level
@@ -127,7 +135,7 @@ class HybridLogger:
         file_handler.setLevel(level)
 
         file_formatter = ProcessorFormatter(
-            processor=ConsoleRenderer(colors=False),
+            processor=get_processor(),
             foreign_pre_chain=[
                 structlog.contextvars.merge_contextvars,
                 safe_filter_by_level,
@@ -212,7 +220,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(log_level)
 
 console_formatter = ProcessorFormatter(
-    processor=ConsoleRenderer(colors=True),
+    processor=get_processor(),
     foreign_pre_chain=[
         structlog.contextvars.merge_contextvars,
         safe_filter_by_level,

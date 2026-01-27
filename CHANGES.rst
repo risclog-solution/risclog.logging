@@ -6,7 +6,8 @@ Change log for risclog.logging
 2.0.1 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Use ``JSONRenderer`` for logging to journal so that log entries are
+  structured and can be parsed by log management systems.
 
 
 2.0.0 (2026-01-19)
