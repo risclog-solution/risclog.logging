@@ -301,10 +301,12 @@ class TestLogger:
             def faulty_func():
                 raise ValueError("This is an error")
 
-            with pytest.raises(ValueError, match="This is an error"):
-                faulty_func()
+            with capture_logs() as cap_logs:
+                with pytest.raises(ValueError, match="This is an error"):
+                    faulty_func()
 
-            assert not mock_smtp_send.called
+            assert cap_logs == []
+            assert mock_smtp_send.called
         finally:
             logging.getLogger(logger.name).setLevel(prev_named)
             logging.getLogger().setLevel(prev_root)

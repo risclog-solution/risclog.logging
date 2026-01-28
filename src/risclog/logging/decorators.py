@@ -45,7 +45,20 @@ def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
         @wraps(func)
         async def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
             if not logging.getLogger(logger.name).isEnabledFor(logging.DEBUG):
-                return await func(*args, **kwargs)
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    if send_email:
+                        with ThreadPoolExecutor() as executor:
+                            message = f"{e}\n\n\n{exception_to_string(excp=e)}"
+                            executor.submit(
+                                partial(
+                                    smtp_email_send,
+                                    message=message,
+                                    logger_name=logger.name,
+                                )
+                            )
+                    raise
             script = Path(inspect.getfile(func)).name
             formatted_args = format_args(func, args, kwargs)
             start_time = time.perf_counter()
@@ -97,7 +110,20 @@ def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
         @wraps(func)
         def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
             if not logging.getLogger(logger.name).isEnabledFor(logging.DEBUG):
-                return func(*args, **kwargs)
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if send_email:
+                        with ThreadPoolExecutor() as executor:
+                            message = f"{e}\n\n\n{exception_to_string(excp=e)}"
+                            executor.submit(
+                                partial(
+                                    smtp_email_send,
+                                    message=message,
+                                    logger_name=logger.name,
+                                )
+                            )
+                    raise
             script = Path(inspect.getfile(func)).name
             formatted_args = format_args(func, args, kwargs)
             start_time = time.perf_counter()
