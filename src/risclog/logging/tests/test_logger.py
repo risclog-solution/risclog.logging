@@ -80,6 +80,8 @@ class TestLogger:
     async def test_log_decorator_logging_behavior_for_mixed_sync_async_functions(
         self,
     ) -> None:
+        getLogger(__name__).set_level(logging.DEBUG)
+
         @log_decorator
         async def sample_async_function(a, b):
             return a + b
@@ -185,6 +187,8 @@ class TestLogger:
 
     @patch("risclog.logging.sender.smtp_email_send")
     def test_exception_logging_with_email(self, mock_smtp_send):
+        getLogger(__name__).set_level(logging.DEBUG)
+
         @log_decorator(send_email=True)
         def faulty_func():
             raise ValueError("This is an error")
@@ -215,6 +219,8 @@ class TestLogger:
     @patch("risclog.logging.sender.smtp_email_send")
     @pytest.mark.asyncio
     async def test_async_exception_logging_with_email(self, mock_smtp_send):
+        getLogger(__name__).set_level(logging.DEBUG)
+
         @log_decorator(send_email=True)
         async def faulty_async_func():
             raise ValueError("This is an async error")
@@ -245,6 +251,8 @@ class TestLogger:
     def test_inline_and_decorator_have_same_id_in_logs(
         self, logger1: HybridLogger
     ) -> None:
+        getLogger(__name__).set_level(logging.DEBUG)
+
         @log_decorator
         def test_func():
             logger1.info("This is a message from the decorator")
@@ -258,6 +266,48 @@ class TestLogger:
         log_text2_id = re.findall(r"\d+", log_text2)
 
         assert log_text1_id == log_text2_id
+
+    def test_log_decorator_is_noop_when_not_debug(self) -> None:
+        logger = getLogger(__name__)
+        prev_named = logging.getLogger(logger.name).level
+        prev_root = logging.getLogger().level
+        logger.set_level(logging.INFO)
+
+        try:
+
+            @log_decorator
+            def sample_func():
+                return 42
+
+            with capture_logs() as cap_logs:
+                result = sample_func()
+
+            assert result == 42
+            assert cap_logs == []
+        finally:
+            logging.getLogger(logger.name).setLevel(prev_named)
+            logging.getLogger().setLevel(prev_root)
+
+    @patch("risclog.logging.sender.smtp_email_send")
+    def test_log_decorator_email_is_noop_when_not_debug(self, mock_smtp_send):
+        logger = getLogger(__name__)
+        prev_named = logging.getLogger(logger.name).level
+        prev_root = logging.getLogger().level
+        logger.set_level(logging.INFO)
+
+        try:
+
+            @log_decorator(send_email=True)
+            def faulty_func():
+                raise ValueError("This is an error")
+
+            with pytest.raises(ValueError, match="This is an error"):
+                faulty_func()
+
+            assert not mock_smtp_send.called
+        finally:
+            logging.getLogger(logger.name).setLevel(prev_named)
+            logging.getLogger().setLevel(prev_root)
 
     def test_set_level_int(self, logger1: HybridLogger) -> None:
         logger1.set_level(logging.DEBUG)

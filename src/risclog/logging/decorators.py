@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
@@ -43,6 +44,8 @@ def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
 
         @wraps(func)
         async def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
+            if not logging.getLogger(logger.name).isEnabledFor(logging.DEBUG):
+                return await func(*args, **kwargs)
             script = Path(inspect.getfile(func)).name
             formatted_args = format_args(func, args, kwargs)
             start_time = time.perf_counter()
@@ -93,6 +96,8 @@ def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
 
         @wraps(func)
         def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
+            if not logging.getLogger(logger.name).isEnabledFor(logging.DEBUG):
+                return func(*args, **kwargs)
             script = Path(inspect.getfile(func)).name
             formatted_args = format_args(func, args, kwargs)
             start_time = time.perf_counter()
