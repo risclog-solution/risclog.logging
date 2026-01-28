@@ -6,7 +6,8 @@ Change log for risclog.logging
 2.1.1 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Make ``log_decorator`` a no-op unless the logger level is ``DEBUG``.
+- Honor ``retry_delay`` for SMTP retry timing.
 
 
 2.1.0 (2026-01-27)
