@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-2.1.1 (unreleased)
+2.2.0 (2026-01-29)
 ==================
 
 - Make ``log_decorator`` a no-op unless the logger level is ``DEBUG``.
