@@ -56,7 +56,14 @@ def smtp_email_send(
     email_message.attach(MIMEText(message, "plain"))
 
     # Retry-Mechanismus mit Stamina
-    @stamina.retry(on=(smtplib.SMTPException, OSError), attempts=max_retries)  # type: ignore[misc]
+    @stamina.retry(
+        on=(smtplib.SMTPException, OSError),
+        attempts=max_retries,
+        wait_initial=retry_delay,
+        wait_max=retry_delay,
+        wait_jitter=0,
+        wait_exp_base=1.0,
+    )  # type: ignore[misc]
     def send_email_with_retry() -> None:
         with smtplib.SMTP(host=smtp_server, port=smtp_port) as smtp:
             smtp.ehlo()
