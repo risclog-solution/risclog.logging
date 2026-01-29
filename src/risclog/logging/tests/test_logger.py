@@ -289,7 +289,7 @@ class TestLogger:
             logging.getLogger().setLevel(prev_root)
 
     @patch("risclog.logging.sender.smtp_email_send")
-    def test_log_decorator_email_is_noop_when_not_debug(self, mock_smtp_send):
+    def test_log_decorator_email_is_sent_when_not_debug(self, mock_smtp_send):
         logger = getLogger(__name__)
         prev_named = logging.getLogger(logger.name).level
         prev_root = logging.getLogger().level
