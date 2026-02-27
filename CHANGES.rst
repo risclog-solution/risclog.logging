@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-2.2.1 (unreleased)
+2.2.1 (2026-02-27)
 ==================
 
 - Allow reconfiguring structlog after first initialization.
