@@ -209,7 +209,7 @@ class HybridLogger:
         )
         from risclog.logging import log_decorator
 
-        return partial(log_decorator, send_email=send_email)  # type: ignore[call-arg]
+        return partial(log_decorator, send_email=send_email)
 
 
 # -----------------------------------

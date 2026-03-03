@@ -32,6 +32,7 @@ setup(
         # Add your dependencies here
         "structlog",
         "stamina",
+        "typing_extensions",
     ],
     extras_require={
         "docs": [

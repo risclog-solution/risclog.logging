@@ -7,9 +7,14 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, TypeVar, cast, overload
+
+from typing_extensions import ParamSpec
 
 from risclog.logging.log import HybridLogger, getLogger
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 def exception_to_string(excp: BaseException) -> str:
@@ -31,11 +36,27 @@ def format_args(func: Any, args: tuple, kwargs: dict) -> tuple:  # type: ignore[
     return tuple(formatted_args + formatted_kwargs)
 
 
-def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
+@overload
+def log_decorator(func: Callable[P, R], send_email: bool = False) -> Callable[P, R]: ...
+
+
+@overload
+def log_decorator(
+    func: None = None, send_email: bool = False
+) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
+
+
+def log_decorator(
+    func: Callable[P, R] | None = None, send_email: bool = False
+) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
     from risclog.logging.sender import smtp_email_send
 
     if func is None:
-        return lambda m: log_decorator(m, send_email)
+
+        def _decorator(method: Callable[P, R]) -> Callable[P, R]:
+            return log_decorator(method, send_email)
+
+        return _decorator
 
     logger: HybridLogger = getLogger(func.__module__)
     method_id = id(func.__name__)
@@ -43,7 +64,7 @@ def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
     if inspect.iscoroutinefunction(func):
 
         @wraps(func)
-        async def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
             if not logging.getLogger(logger.name).isEnabledFor(logging.DEBUG):
                 try:
                     return await func(*args, **kwargs)
@@ -108,7 +129,7 @@ def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
     else:
 
         @wraps(func)
-        def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             if not logging.getLogger(logger.name).isEnabledFor(logging.DEBUG):
                 try:
                     return func(*args, **kwargs)
@@ -168,4 +189,4 @@ def log_decorator(func=None, send_email=False):  # type: ignore[no-untyped-def]
                 )
                 raise
 
-    return wrapper
+    return cast(Callable[P, R], wrapper)
