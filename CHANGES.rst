@@ -3,7 +3,7 @@ Change log for risclog.logging
 ==============================
 
 
-2.2.2 (unreleased)
+2.2.2 (2026-04-13)
 ==================
 
 - fix: Fix log_decorator type hints
