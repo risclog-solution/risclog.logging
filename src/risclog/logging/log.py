@@ -7,7 +7,7 @@ import logging
 import os
 import warnings
 from functools import lru_cache, partial, wraps
-
+from opentelemetry import trace
 import structlog
 from structlog.dev import ConsoleRenderer
 from structlog.processors import JSONRenderer
@@ -71,12 +71,25 @@ def safe_filter_by_level(logger, method_name, event_dict):  # type: ignore[no-un
     return structlog.stdlib.filter_by_level(logger, method_name, event_dict)
 
 
+def add_otel_context(_logger, _method_name, event_dict):  # type: ignore[no-untyped-def]
+    span = trace.get_current_span()
+    span_context = span.get_span_context()
+    if not span_context or not span_context.is_valid:
+        return event_dict
+
+    event_dict["otelTraceID"] = f"{span_context.trace_id:032x}"
+    event_dict["otelSpanID"] = f"{span_context.span_id:016x}"
+    event_dict["otelTraceSampled"] = bool(span_context.trace_flags.sampled)
+    return event_dict
+
+
 # -------------------------------
 # 2) Prozessoren definieren
 # -------------------------------
 def get_processors(for_async: bool = False) -> list:  # type: ignore[type-arg]
     processors = [
         structlog.contextvars.merge_contextvars,
+        add_otel_context,
         safe_filter_by_level,
         structlog.stdlib.ExtraAdder(),
         structlog.stdlib.PositionalArgumentsFormatter(),
@@ -138,6 +151,7 @@ class HybridLogger:
             processor=get_processor(),
             foreign_pre_chain=[
                 structlog.contextvars.merge_contextvars,
+                add_otel_context,
                 safe_filter_by_level,
                 structlog.stdlib.add_log_level,
                 structlog.stdlib.PositionalArgumentsFormatter(),
@@ -223,6 +237,7 @@ console_formatter = ProcessorFormatter(
     processor=get_processor(),
     foreign_pre_chain=[
         structlog.contextvars.merge_contextvars,
+        add_otel_context,
         safe_filter_by_level,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),

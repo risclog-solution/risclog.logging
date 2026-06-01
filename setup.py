@@ -33,6 +33,7 @@ setup(
         "structlog",
         "stamina",
         "typing_extensions",
+        "opentelemetry-api",
     ],
     extras_require={
         "docs": [
