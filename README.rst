@@ -179,6 +179,33 @@ redacted when they appear inside log strings. Long strings, large containers,
 binary data, private key blocks and recursive structures are shortened
 automatically.
 
+Example:
+
+.. code-block:: python
+
+    import os
+    from risclog.logging import log_decorator
+
+    os.environ["S3_SECRET_KEY"] = "storage-secret-value"
+
+    @log_decorator
+    def upload_file(password: str, headers: dict) -> dict:
+        return {
+            "bucket": "documents",
+            "secret_key": "storage-secret-value",
+            "preview": "x" * 1000,
+        }
+
+    upload_file(
+        password="plain-password",
+        headers={"Authorization": "Bearer request-token"},
+    )
+
+    # Logs password='***REDACTED***'
+    # Logs headers={'Authorization': '***REDACTED***'}
+    # Logs result.secret_key='***REDACTED***'
+    # Logs result.preview='xxxxx...[truncated](chars=1000)'
+
 The default limits can be adjusted via environment variables:
 
 .. code-block:: bash
