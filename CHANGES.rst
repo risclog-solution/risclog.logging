@@ -6,7 +6,9 @@ Change log for risclog.logging
 2.2.4 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Sanitize ``log_decorator`` values by redacting secrets and truncating large
+  arguments, keyword arguments, return values and exception messages, including
+  S3-compatible credentials from environment variables.
 
 
 2.2.3 (2026-06-30)
