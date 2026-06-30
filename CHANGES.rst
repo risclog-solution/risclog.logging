@@ -6,7 +6,7 @@ Change log for risclog.logging
 2.2.3 (unreleased)
 ==================
 
-- Nothing changed yet.
+- Reenable uvicorn logger.
 
 
 2.2.2 (2026-04-13)

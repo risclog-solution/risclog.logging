@@ -38,9 +38,6 @@ logging.basicConfig(
 
 # Konfigurierbare Logger-Ausschlüsse via Environment-Variable
 _DEFAULT_EXCLUDED_LOGGERS = [
-    "uvicorn",
-    "uvicorn.error",
-    "uvicorn.access",
     "watchfiles",
 ]
 _EXCLUDED_LOGGERS_ENV = os.getenv("LOG_EXCLUDED_LOGGERS", "")
