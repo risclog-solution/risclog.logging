@@ -168,6 +168,56 @@ The ``@log_decorator`` automatically logs function execution with comprehensive 
         pass
     # Logs: [Decorator error in risky_operation] error='division by zero'
 
+**Sanitizing decorator values:**
+
+Decorator logs sanitize ``args``, ``kwargs``, ``result`` and exception strings
+before they are written. Sensitive field names such as ``password``, ``token``,
+``api_key``, ``authorization``, ``cookie``, ``secret``, ``access_key`` and
+``secret_key`` are replaced with ``***REDACTED***``. Secret values from matching
+environment variables such as ``S3_SECRET_KEY`` or ``MINIO_ACCESS_KEY`` are also
+redacted when they appear inside log strings. Long strings, large containers,
+binary data, private key blocks and recursive structures are shortened
+automatically.
+
+Example:
+
+.. code-block:: python
+
+    import os
+    from risclog.logging import log_decorator
+
+    os.environ["S3_SECRET_KEY"] = "storage-secret-value"
+
+    @log_decorator
+    def upload_file(password: str, headers: dict) -> dict:
+        return {
+            "bucket": "documents",
+            "secret_key": "storage-secret-value",
+            "preview": "x" * 1000,
+        }
+
+    upload_file(
+        password="plain-password",
+        headers={"Authorization": "Bearer request-token"},
+    )
+
+    # Logs password='***REDACTED***'
+    # Logs headers={'Authorization': '***REDACTED***'}
+    # Logs result.secret_key='***REDACTED***'
+    # Logs result.preview='xxxxx...[truncated](chars=1000)'
+
+The default limits can be adjusted via environment variables:
+
+.. code-block:: bash
+
+    export LOG_DECORATOR_MAX_STRING_LENGTH=500
+    export LOG_DECORATOR_MAX_COLLECTION_ITEMS=20
+    export LOG_DECORATOR_MAX_DEPTH=4
+    export LOG_DECORATOR_MAX_EXCEPTION_LENGTH=8000
+    export LOG_DECORATOR_MIN_SECRET_VALUE_LENGTH=8
+    export LOG_DECORATOR_REDACT_KEYS="iban,customer_secret"
+    export LOG_DECORATOR_REDACT_ENV_VARS="CUSTOM_S3_SECRET"
+
 Using the Decorator in Classes
 ------------------------------
 

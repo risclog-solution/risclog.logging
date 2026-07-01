@@ -1,2 +1,4 @@
 # appenv-python-preference: 3.13,3.12
+setuptools>=74
+wheel
 -e .[test,doc]
