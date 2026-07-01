@@ -3,6 +3,12 @@ Change log for risclog.logging
 ==============================
 
 
+2.3.1 (unreleased)
+==================
+
+- Nothing changed yet.
+
+
 2.3.0 (2026-07-01)
 ==================
 
