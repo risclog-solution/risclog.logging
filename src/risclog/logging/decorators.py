@@ -345,6 +345,8 @@ class LogValueSanitizer:
         seen: set[int],
     ) -> list[Any]:
         seen.add(id(value))
+        # Used for complex iterable values: sanitize the configured prefix
+        # and mark skipped items.
         sanitized_items = [
             self.sanitize(
                 item,
