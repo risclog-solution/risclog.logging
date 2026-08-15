@@ -29,11 +29,13 @@ setup(
         "structlog",
         "stamina",
         "typing_extensions",
-        "opentelemetry-api",
     ],
     extras_require={
         "docs": [
             "Sphinx",
+        ],
+        "opentelemetry": [
+            "opentelemetry-api",
         ],
         "test": [
             "pytest-cache",

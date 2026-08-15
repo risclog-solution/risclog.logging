@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import sys
 import asyncio
 import inspect
 import logging
 import os
+import sys
 import warnings
-from functools import lru_cache, partial, wraps
-from opentelemetry import trace
+from functools import cache, partial, wraps
+
 import structlog
 from structlog.dev import ConsoleRenderer
 from structlog.processors import JSONRenderer
@@ -69,14 +69,20 @@ def safe_filter_by_level(logger, method_name, event_dict):  # type: ignore[no-un
 
 
 def add_otel_context(_logger, _method_name, event_dict):  # type: ignore[no-untyped-def]
+    """Add OpenTelemetry standard fields to logs. If the opentelemtry feature is not activated, this is a no-op."""
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        return event_dict
+
     span = trace.get_current_span()
     span_context = span.get_span_context()
     if not span_context or not span_context.is_valid:
         return event_dict
 
-    event_dict["otelTraceID"] = f"{span_context.trace_id:032x}"
-    event_dict["otelSpanID"] = f"{span_context.span_id:016x}"
-    event_dict["otelTraceSampled"] = bool(span_context.trace_flags.sampled)
+    event_dict["trace_id"] = f"{span_context.trace_id:032x}"
+    event_dict["span_id"] = f"{span_context.span_id:016x}"
+    event_dict["trace_flags"] = bool(span_context.trace_flags)
     return event_dict
 
 
@@ -251,7 +257,7 @@ root_logger.addHandler(console_handler)
 logging.getLogger("asyncio").setLevel(log_level)
 
 
-@lru_cache(maxsize=None)
+@cache
 def getLogger(name: str = __name__) -> HybridLogger:
     return HybridLogger(name=name)
 
