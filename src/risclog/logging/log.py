@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import sys
 import asyncio
 import inspect
 import logging
 import os
+import sys
 import warnings
-from functools import lru_cache, partial, wraps
+from functools import cache, partial, wraps
 
 import structlog
 from structlog.dev import ConsoleRenderer
@@ -68,12 +68,31 @@ def safe_filter_by_level(logger, method_name, event_dict):  # type: ignore[no-un
     return structlog.stdlib.filter_by_level(logger, method_name, event_dict)
 
 
+def add_otel_context(_logger, _method_name, event_dict):  # type: ignore[no-untyped-def]
+    """Add OpenTelemetry standard fields to logs. If the opentelemtry feature is not activated, this is a no-op."""
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        return event_dict
+
+    span = trace.get_current_span()
+    span_context = span.get_span_context()
+    if not span_context or not span_context.is_valid:
+        return event_dict
+
+    event_dict["trace_id"] = f"{span_context.trace_id:032x}"
+    event_dict["span_id"] = f"{span_context.span_id:016x}"
+    event_dict["trace_flags"] = bool(span_context.trace_flags)
+    return event_dict
+
+
 # -------------------------------
 # 2) Prozessoren definieren
 # -------------------------------
 def get_processors(for_async: bool = False) -> list:  # type: ignore[type-arg]
     processors = [
         structlog.contextvars.merge_contextvars,
+        add_otel_context,
         safe_filter_by_level,
         structlog.stdlib.ExtraAdder(),
         structlog.stdlib.PositionalArgumentsFormatter(),
@@ -135,6 +154,7 @@ class HybridLogger:
             processor=get_processor(),
             foreign_pre_chain=[
                 structlog.contextvars.merge_contextvars,
+                add_otel_context,
                 safe_filter_by_level,
                 structlog.stdlib.add_log_level,
                 structlog.stdlib.PositionalArgumentsFormatter(),
@@ -220,6 +240,7 @@ console_formatter = ProcessorFormatter(
     processor=get_processor(),
     foreign_pre_chain=[
         structlog.contextvars.merge_contextvars,
+        add_otel_context,
         safe_filter_by_level,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
@@ -236,7 +257,7 @@ root_logger.addHandler(console_handler)
 logging.getLogger("asyncio").setLevel(log_level)
 
 
-@lru_cache(maxsize=None)
+@cache
 def getLogger(name: str = __name__) -> HybridLogger:
     return HybridLogger(name=name)
 

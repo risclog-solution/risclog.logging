@@ -34,6 +34,9 @@ setup(
         "docs": [
             "Sphinx",
         ],
+        "opentelemetry": [
+            "opentelemetry-api",
+        ],
         "test": [
             "pytest-cache",
             "pytest-cov",
