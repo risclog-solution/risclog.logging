@@ -7,6 +7,11 @@ from unittest.mock import patch
 
 import pytest
 from risclog.logging import getLogger, log_decorator
+from risclog.logging.decorators import (
+    REDACTED_VALUE,
+    LogValueSanitizer,
+    sanitize_log_value,
+)
 from risclog.logging.log import HybridLogger
 from structlog.testing import capture_logs
 
@@ -130,6 +135,95 @@ class TestLogger:
         except Exception as exc:
             exc_string = exception_to_string(exc)
         assert "An error occurred" in exc_string
+
+    def test_sanitize_log_value_redacts_inline_secrets(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("S3_SECRET_KEY", "s3-secret-value-123")
+        monkeypatch.setenv("MINIO_ACCESS_KEY", "minio-access-value-123")
+
+        sanitized = sanitize_log_value(
+            'password="plain text" Authorization: Bearer token123 '
+            "postgres://user:db-password@example.com/db "
+            "s3=s3-secret-value-123 minio=minio-access-value-123 "
+            "-----BEGIN PRIVATE KEY-----abc-----END PRIVATE KEY-----",
+            max_string_length=500,
+        )
+
+        assert "plain text" not in sanitized
+        assert "token123" not in sanitized
+        assert "db-password" not in sanitized
+        assert "s3-secret-value-123" not in sanitized
+        assert "minio-access-value-123" not in sanitized
+        assert "BEGIN PRIVATE KEY" not in sanitized
+        assert REDACTED_VALUE in sanitized
+        assert sanitize_log_value(
+            {
+                "s3_access_key_id": "access-id",
+                "endpoint_url": "https://s3.example.test",
+            }
+        ) == {
+            "s3_access_key_id": REDACTED_VALUE,
+            "endpoint_url": "https://s3.example.test",
+        }
+
+    def test_log_value_sanitizer_redacts_custom_environment_values(
+        self,
+    ) -> None:
+        sanitizer = LogValueSanitizer(
+            {
+                "CUSTOM_S3_SECRET": "storage-secret-value",
+                "LOG_DECORATOR_REDACT_ENV_VARS": "CUSTOM_S3_SECRET",
+            }
+        )
+
+        sanitized = sanitizer.sanitize("secret value is storage-secret-value")
+
+        assert "storage-secret-value" not in sanitized
+        assert REDACTED_VALUE in sanitized
+
+    def test_sanitize_log_value_handles_broken_repr(self) -> None:
+        class BrokenRepr:
+            def __repr__(self):
+                raise RuntimeError("repr failed")
+
+        assert sanitize_log_value(BrokenRepr()) == "<BrokenRepr repr failed>"
+
+    def test_log_decorator_sanitizes_large_and_sensitive_values(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        getLogger(__name__).set_level(logging.DEBUG)
+        monkeypatch.setenv("LOG_DECORATOR_MAX_STRING_LENGTH", "12")
+        monkeypatch.setenv("LOG_DECORATOR_MAX_COLLECTION_ITEMS", "3")
+
+        @log_decorator
+        def sample_func(payload, password=None):
+            return {
+                "description": "x" * 30,
+                "items": ["a", "b", "c", "d"],
+                "token": "secret-token",
+            }
+
+        with capture_logs() as cap_logs:
+            result = sample_func(
+                {"api_key": "secret-key", "description": "y" * 30},
+                password="super-secret",
+            )
+
+        assert result["token"] == "secret-token"
+        assert "super-secret" not in str(cap_logs)
+        assert "secret-key" not in str(cap_logs)
+        assert "secret-token" not in str(cap_logs)
+        assert REDACTED_VALUE in str(cap_logs)
+        assert "...[truncated](chars=30)" in str(cap_logs)
+        assert cap_logs[0]["kwargs"] == {"password": REDACTED_VALUE}
+        assert cap_logs[1]["result"]["items"] == [
+            "a",
+            "b",
+            "c",
+            "...[truncated](items=4)",
+        ]
+        assert cap_logs[1]["result"]["token"] == REDACTED_VALUE
 
     def test_debug_log(self, logger1: HybridLogger):
         with capture_logs() as cap_logs:
