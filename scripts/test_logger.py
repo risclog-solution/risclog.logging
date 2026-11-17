@@ -1,6 +1,7 @@
 """Einfaches Test-Skript für den risclog Logger."""
 
 import logging
+
 from risclog.logging import getLogger, log_decorator
 
 # Logger erstellen

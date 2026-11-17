@@ -8,7 +8,9 @@ from email.mime.text import MIMEText
 import stamina
 
 
-def get_env_case_insensitive(varname: str, default: str | None = None) -> str | None:
+def get_env_case_insensitive(
+    varname: str, default: str | None = None
+) -> str | None:
     value = os.getenv(varname.upper())
     if value is not None:
         return value
@@ -37,7 +39,9 @@ def smtp_email_send(
     smtp_password = get_env_case_insensitive("logging_email_smtp_password")
     email_to = get_env_case_insensitive("logging_email_to")
     smtp_server = get_env_case_insensitive("logging_email_smtp_server")
-    smtp_port = int(get_env_case_insensitive("logging_email_smtp_port") or "465")
+    smtp_port = int(
+        get_env_case_insensitive("logging_email_smtp_port") or "465"
+    )
 
     if not (smtp_user and smtp_password and email_to and smtp_server):
         from risclog.logging import getLogger
@@ -63,7 +67,7 @@ def smtp_email_send(
         wait_max=retry_delay,
         wait_jitter=0,
         wait_exp_base=1.0,
-    )  # type: ignore[misc]
+    )
     def send_email_with_retry() -> None:
         with smtplib.SMTP(host=smtp_server, port=smtp_port) as smtp:
             smtp.ehlo()

@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import sys
 import asyncio
 import inspect
 import logging
 import os
+import sys
 import warnings
-from functools import lru_cache, partial, wraps
+from functools import cache, partial, wraps
 
 import structlog
 from structlog.dev import ConsoleRenderer
 from structlog.processors import JSONRenderer
 from structlog.stdlib import ProcessorFormatter
+from structlog.typing import EventDict, Processor
 
 # -------------------------------
 # 1) Basis-Logging-Konfiguration
@@ -55,14 +56,16 @@ for logger_name in EXCLUDED_LOGGERS:
     logger_obj.setLevel(log_level)
 
 
-def get_processor() -> structlog.processors.Processor:
+def get_processor() -> Processor:
     if sys.stderr.isatty():
         return ConsoleRenderer(colors=True)
     return JSONRenderer()
 
 
 # wrapper for structlog.stdlib.filter_by_level
-def safe_filter_by_level(logger, method_name, event_dict):  # type: ignore[no-untyped-def]
+def safe_filter_by_level(
+    logger: logging.Logger | None, method_name: str, event_dict: EventDict
+) -> EventDict:
     if logger is None:
         return event_dict
     return structlog.stdlib.filter_by_level(logger, method_name, event_dict)
@@ -71,8 +74,8 @@ def safe_filter_by_level(logger, method_name, event_dict):  # type: ignore[no-un
 # -------------------------------
 # 2) Prozessoren definieren
 # -------------------------------
-def get_processors(for_async: bool = False) -> list:  # type: ignore[type-arg]
-    processors = [
+def get_processors(for_async: bool = False) -> list[Processor]:
+    processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,
         safe_filter_by_level,
         structlog.stdlib.ExtraAdder(),
@@ -83,7 +86,9 @@ def get_processors(for_async: bool = False) -> list:  # type: ignore[type-arg]
     ]
 
     if not for_async:
-        processors.insert(1, structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"))
+        processors.insert(
+            1, structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
+        )
         processors.insert(2, structlog.stdlib.add_log_level)
         processors.insert(3, structlog.stdlib.add_logger_name)
 
@@ -149,7 +154,7 @@ class HybridLogger:
             py_async_logger = self.async_logger
             py_async_logger.addHandler(file_handler)
 
-    def __getattr__(self, method_name: str):  # type: ignore[no-untyped-def]
+    def __getattr__(self, method_name: str):
         sync_method = getattr(self.sync_logger, method_name)
         function_wrappers = ["sync_wrapper", "async_wrapper", "wrapper"]
 
@@ -168,7 +173,7 @@ class HybridLogger:
             return {}
 
         @wraps(sync_method)
-        def sync_wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
+        def sync_wrapper(*args, **kwargs):
             trace_context = kwargs.pop("_trace_context", {})
             if trace_context:
                 # Ergänze Args mit Trace-Informationen für besseres Debugging
@@ -178,7 +183,7 @@ class HybridLogger:
                 args = tuple(f"{arg}" for arg in args)
             return sync_method(*args, **kwargs)
 
-        def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
+        def wrapper(*args, **kwargs):
             try:
                 try:
                     loop = asyncio.get_running_loop()
@@ -198,7 +203,7 @@ class HybridLogger:
 
         return wrapper
 
-    def decorator(self, send_email: bool = False):  # type: ignore[no-untyped-def]
+    def decorator(self, send_email: bool = False):
         warnings.warn(
             "'decorator' is deprecated and will be removed from version 1.4.0. Please use 'log_decorator' instead.",
             DeprecationWarning,
@@ -236,7 +241,7 @@ root_logger.addHandler(console_handler)
 logging.getLogger("asyncio").setLevel(log_level)
 
 
-@lru_cache(maxsize=None)
+@cache
 def getLogger(name: str = __name__) -> HybridLogger:
     return HybridLogger(name=name)
 

@@ -2,11 +2,14 @@ import asyncio
 import logging
 
 from fastapi import FastAPI
+
 from risclog.logging import getLogger, log_decorator
 
 app = FastAPI()
 logger = getLogger(__name__)
-logger.add_file_handler("myfastapi.log", level=logging.DEBUG)  # File-Log, farblos
+logger.add_file_handler(
+    "myfastapi.log", level=logging.DEBUG
+)  # File-Log, farblos
 
 # Füge einen Console Handler für Decorator Logs hinzu
 console_handler = logging.StreamHandler()
@@ -64,9 +67,10 @@ async def compute_async_deco(a: int, b: int):
 
 if __name__ == "__main__":
     import time
+    from threading import Thread
+
     import requests
     import uvicorn
-    from threading import Thread
 
     # Starte den Server in einem separaten Thread
     def run_server():
@@ -91,13 +95,17 @@ if __name__ == "__main__":
 
         # Test 2: Sync Berechnung
         print("Test 2: GET /compute_sync?a=5&b=3")
-        response = requests.get(f"{base_url}/compute_sync", params={"a": 5, "b": 3})
+        response = requests.get(
+            f"{base_url}/compute_sync", params={"a": 5, "b": 3}
+        )
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}\n")
 
         # Test 3: Async Berechnung
         print("Test 3: GET /compute_async?a=10&b=20")
-        response = requests.get(f"{base_url}/compute_async", params={"a": 10, "b": 20})
+        response = requests.get(
+            f"{base_url}/compute_async", params={"a": 10, "b": 20}
+        )
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}\n")
 

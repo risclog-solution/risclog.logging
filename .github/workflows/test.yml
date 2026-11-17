@@ -13,12 +13,11 @@ on:
 
 jobs:
   test:
-    uses: risclog-solution/gha_workflow_templates/.github/workflows/pytest_appenv.yml@master
+    uses: risclog-solution/gha_workflow_templates/.github/workflows/pytest_uv.yml@master
     with:
-      versions: >-
-        ["3.13","3.12"]
+      versions: '["3.12", "3.13"]'
     secrets:
-      PIPCONF: ${{ secrets.PIPCONF }}
+      UVCONF: ${{ secrets.UVCONF }}
   coverage:
     needs: test
     uses: risclog-solution/gha_workflow_templates/.github/workflows/coverage.yml@master

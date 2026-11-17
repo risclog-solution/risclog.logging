@@ -1,9 +1,12 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+default_language_version:
+  python: python3.12
+
 repos:
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
 
     # These are the most critical checks.
@@ -43,39 +46,34 @@ repos:
     # Try to catch some more obscure things.
     #
     - id: check-executables-have-shebangs
-    - id: check-byte-order-marker
+    - id: fix-byte-order-marker
     - id: check-case-conflict
-    - id: fix-encoding-pragma
-      args: [--remove]
 
     # This checks that all links to our VCS are permalinks. How oddly specific!
     - id: check-vcs-permalinks
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.11.13
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.5
     hooks:
-    - id: ruff
+    - id: ruff-check
       args: [--fix, --exit-non-zero-on-fix]
     - id: ruff-format
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.0
+    rev: v8.30.1
     hooks:
       - id: gitleaks
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v1.26.1
-    hooks:
-    - id: pyupgrade
   - repo: https://github.com/mgedmin/check-manifest
-    rev: '0.40'
+    rev: '0.51'
     hooks:
     - id: check-manifest
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
+  - repo: local
     hooks:
-      - id: mypy
-        additional_dependencies:
-          - pytest
-          - pydantic
-        exclude: ^(scripts/|examples/|docs/)
+      - id: pyrefly
+        name: pyrefly
+        entry: uv run --locked pyrefly check
+        language: python
+        additional_dependencies: [uv]
+        types: [python]
+        pass_filenames: false
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:
