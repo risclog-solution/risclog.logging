@@ -6,6 +6,8 @@ import tempfile
 from unittest.mock import patch
 
 import pytest
+from structlog.testing import capture_logs
+
 from risclog.logging import getLogger, log_decorator
 from risclog.logging.decorators import (
     REDACTED_VALUE,
@@ -13,7 +15,6 @@ from risclog.logging.decorators import (
     sanitize_log_value,
 )
 from risclog.logging.log import HybridLogger
-from structlog.testing import capture_logs
 
 try:
     from structlog.stdlib import ProcessorFormatter
@@ -25,7 +26,9 @@ class TestLogger:
     def test_bind(self):
         with capture_logs() as cap_logs:
             getLogger(__name__).bind(x="y").info("hello")
-            assert cap_logs == [{"x": "y", "event": "hello", "log_level": "info"}]
+            assert cap_logs == [
+                {"x": "y", "event": "hello", "log_level": "info"}
+            ]
 
     @pytest.mark.asyncio
     async def test_async_logging_levels_with_different_loggers(
@@ -102,13 +105,19 @@ class TestLogger:
             assert cap_logs[0]["_script"] == "test_logger.py"
             assert cap_logs[0]["args"] == ("a:int=3", "b:int=2")
             assert cap_logs[0]["kwargs"] == {}
-            assert "Decorator start: sample_async_function" in cap_logs[0]["event"]
+            assert (
+                "Decorator start: sample_async_function"
+                in cap_logs[0]["event"]
+            )
             assert cap_logs[0]["log_level"] == "info"
 
             assert cap_logs[1]["_function"] == "sample_async_function"
             assert cap_logs[1]["_script"] == "test_logger.py"
             assert isinstance(cap_logs[1]["duration"], str)
-            assert "Decorator success: sample_async_function" in cap_logs[1]["event"]
+            assert (
+                "Decorator success: sample_async_function"
+                in cap_logs[1]["event"]
+            )
             assert cap_logs[1]["log_level"] == "info"
 
             loop = asyncio.get_running_loop()
@@ -118,13 +127,18 @@ class TestLogger:
             assert cap_logs[2]["_script"] == "test_logger.py"
             assert cap_logs[2]["args"] == ("a:int=3", "b:int=2")
             assert cap_logs[2]["kwargs"] == {}
-            assert "Decorator start: sample_sync_function" in cap_logs[2]["event"]
+            assert (
+                "Decorator start: sample_sync_function" in cap_logs[2]["event"]
+            )
             assert cap_logs[2]["log_level"] == "info"
 
             assert cap_logs[3]["_function"] == "sample_sync_function"
             assert cap_logs[3]["_script"] == "test_logger.py"
             assert isinstance(cap_logs[3]["duration"], str)
-            assert "Decorator success: sample_sync_function" in cap_logs[3]["event"]
+            assert (
+                "Decorator success: sample_sync_function"
+                in cap_logs[3]["event"]
+            )
             assert cap_logs[1]["log_level"] == "info"
 
     def test_exception_to_string(self) -> None:
@@ -229,13 +243,17 @@ class TestLogger:
         with capture_logs() as cap_logs:
             logger1.debug("This is a debug message")
 
-        assert cap_logs == [{"event": "This is a debug message", "log_level": "debug"}]
+        assert cap_logs == [
+            {"event": "This is a debug message", "log_level": "debug"}
+        ]
 
     def test_info_log(self, logger2: HybridLogger):
         with capture_logs() as cap_logs:
             logger2.info("This is a info message")
 
-        assert cap_logs == [{"event": "This is a info message", "log_level": "info"}]
+        assert cap_logs == [
+            {"event": "This is a info message", "log_level": "info"}
+        ]
 
     def test_warning_log(self, logger1: HybridLogger):
         with capture_logs() as cap_logs:
@@ -249,7 +267,9 @@ class TestLogger:
         with capture_logs() as cap_logs:
             logger2.error("This is a error message")
 
-        assert cap_logs == [{"event": "This is a error message", "log_level": "error"}]
+        assert cap_logs == [
+            {"event": "This is a error message", "log_level": "error"}
+        ]
 
     def test_critical_log(self, logger1: HybridLogger):
         with capture_logs() as cap_logs:
@@ -461,16 +481,22 @@ class TestLogger:
         temp_file = tempfile.NamedTemporaryFile(delete=False)
         temp_file.close()
         try:
-            hybrid_logger.add_file_handler(temp_file.name, level=logging.WARNING)
+            hybrid_logger.add_file_handler(
+                temp_file.name, level=logging.WARNING
+            )
             sync_handlers = [
-                h for h in sync_logger.handlers if isinstance(h, logging.FileHandler)
+                h
+                for h in sync_logger.handlers
+                if isinstance(h, logging.FileHandler)
             ]
 
             assert len(sync_handlers) > 0
             assert sync_handlers[0].level == logging.WARNING
 
             async_handlers = [
-                h for h in async_logger.handlers if isinstance(h, logging.FileHandler)
+                h
+                for h in async_logger.handlers
+                if isinstance(h, logging.FileHandler)
             ]
             assert len(async_handlers) > 0
             assert async_handlers[0].level == logging.WARNING

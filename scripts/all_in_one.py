@@ -5,7 +5,9 @@ from risclog.logging import get_logger, getLogger, log_decorator
 
 logger = get_logger(__name__)
 logger.set_level(logging.DEBUG)
-file_logger = getLogger(__name__).add_file_handler("test.log", level=logging.WARNING)
+file_logger = getLogger(__name__).add_file_handler(
+    "test.log", level=logging.WARNING
+)
 
 
 # @log_decorator
@@ -63,7 +65,9 @@ def sample_function(*args, **kwargs):
     result = {"sum_args": sum(args) if args else 0, **kwargs}
     logger.info("Result", result=result)
     if result["sum_args"] > 5:
-        logger.warning("Sum of arguments is greater than 5", sum=result["sum_args"])
+        logger.warning(
+            "Sum of arguments is greater than 5", sum=result["sum_args"]
+        )
 
     try:
         1 / 0

@@ -3,10 +3,14 @@ Change log for risclog.logging
 ==============================
 
 
-2.3.1 (unreleased)
+3.0.0 (unreleased)
 ==================
 
-- Nothing changed yet.
+- **Breaking:** Require Python 3.12 or newer, migrate ``risclog`` to a PEP 420
+  implicit namespace package (no ``risclog/__init__.py`` anymore), drop
+  ``setup.py``/``appenv`` and the Sphinx documentation, and modernize tooling
+  with uv, Ruff, Pyrefly, consolidated configuration and the reusable uv test
+  workflow (#44626).
 
 
 2.3.0 (2026-07-01)

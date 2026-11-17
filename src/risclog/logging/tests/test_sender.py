@@ -5,6 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import pytest
+
 from risclog.logging.sender import get_env_case_insensitive, smtp_email_send
 
 
@@ -121,7 +122,9 @@ class TestSender:
 
         smtp_instance = FakeSMTP.last_instance
         assert smtp_instance is not None, "FakeSMTP instance was not created."
-        assert smtp_instance.port == 465, "Default SMTP port 465 should be used"
+        assert smtp_instance.port == 465, (
+            "Default SMTP port 465 should be used"
+        )
 
     def test_smtp_email_send_missing_env(
         self, monkeypatch: pytest.MonkeyPatch
@@ -129,7 +132,9 @@ class TestSender:
         fake_logger = FakeLogger()
         fake_logging_module = types.ModuleType("risclog.logging")
         fake_logging_module.getLogger = lambda name: fake_logger
-        monkeypatch.setitem(sys.modules, "risclog.logging", fake_logging_module)
+        monkeypatch.setitem(
+            sys.modules, "risclog.logging", fake_logging_module
+        )
 
         def fake_smtp(*args, **kwargs):
             raise Exception(
@@ -201,7 +206,9 @@ class TestSender:
         fake_logger = FakeLogger()
         fake_logging_module = types.ModuleType("risclog.logging")
         fake_logging_module.getLogger = lambda name: fake_logger
-        monkeypatch.setitem(sys.modules, "risclog.logging", fake_logging_module)
+        monkeypatch.setitem(
+            sys.modules, "risclog.logging", fake_logging_module
+        )
 
         call_count = [0]
 
@@ -235,7 +242,9 @@ class TestSender:
             "Test message", "TestLogger", max_retries=3, retry_delay=0.01
         )
 
-        assert result is False, "Should return False after max retries exhausted"
+        assert result is False, (
+            "Should return False after max retries exhausted"
+        )
         assert call_count[0] == 3, "Should have tried exactly 3 times"
 
     def test_smtp_email_send_logs_error_after_max_retries(
@@ -250,7 +259,9 @@ class TestSender:
         fake_logger = FakeLogger()
         fake_logging_module = types.ModuleType("risclog.logging")
         fake_logging_module.getLogger = lambda name: fake_logger
-        monkeypatch.setitem(sys.modules, "risclog.logging", fake_logging_module)
+        monkeypatch.setitem(
+            sys.modules, "risclog.logging", fake_logging_module
+        )
 
         class FailingFakeSMTP:
             def __init__(self, host, port):
@@ -291,7 +302,9 @@ class TestSender:
 
 
 class TestCaseInsensitive:
-    def test_returns_uppercase_when_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_returns_uppercase_when_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("MYVAR", "upper_value")
         monkeypatch.delenv("myvar", raising=False)
 
@@ -313,7 +326,9 @@ class TestCaseInsensitive:
         monkeypatch.delenv("NONEXISTENT", raising=False)
         monkeypatch.delenv("nonexistent", raising=False)
 
-        result = get_env_case_insensitive("nonexistent", default="default_value")
+        result = get_env_case_insensitive(
+            "nonexistent", default="default_value"
+        )
         assert result == "default_value"
 
     def test_prefers_uppercase_when_both_set(

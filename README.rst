@@ -393,25 +393,33 @@ To run the tests for this package, execute:
 
 .. code-block:: bash
 
-    pytest
+    uv run pytest
 
 Or with verbose output:
 
 .. code-block:: bash
 
-    pytest -v
+    uv run pytest -v
 
 Development
 ===========
 
-To set up a development environment, clone the repository and install in editable mode:
+To set up a development environment, install `uv <https://docs.astral.sh/uv/>`_,
+clone the repository, and sync the locked dependencies. Python 3.12 and 3.13
+are supported:
 
 .. code-block:: bash
 
     git clone https://github.com/risclog-solution/risclog.logging
     cd risclog.logging
-    pip install -e .[dev]
-    pytest
+    uv sync --locked --python 3.12
+    uv run pre-commit install
+    uv run pytest
+    uv run pre-commit run --all-files
+
+The default development group includes all package extras
+and dependencies for the scripts in ``scripts/``. Run examples with
+``uv run python scripts/api.py`` and build distributions with ``uv build``.
 
 Troubleshooting
 ===============

@@ -6,18 +6,13 @@ import os
 import re
 import time
 import traceback
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast, overload
-
-from typing_extensions import ParamSpec
+from typing import Any, cast, overload
 
 from risclog.logging.log import HybridLogger, getLogger
-
-P = ParamSpec("P")
-R = TypeVar("R")
 
 REDACTED_VALUE = "***REDACTED***"
 TRUNCATED_VALUE = "...[truncated]"
@@ -78,7 +73,9 @@ _AUTHORIZATION_RE = re.compile(
 
 _BEARER_TOKEN_RE = re.compile(r"(?i)\b(bearer\s+)([a-z0-9._~+/=-]+)")
 
-_URL_CREDENTIAL_RE = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^/\s:@]+:)([^@\s/]+)(@)")
+_URL_CREDENTIAL_RE = re.compile(
+    r"(?i)([a-z][a-z0-9+.-]*://[^/\s:@]+:)([^@\s/]+)(@)"
+)
 
 _PRIVATE_KEY_BLOCK_RE = re.compile(
     r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?"
@@ -201,8 +198,10 @@ class LogValueSanitizer:
         value = self.redact_known_secret_values(value)
         value = _PRIVATE_KEY_BLOCK_RE.sub(REDACTED_VALUE, value)
         value = _AUTHORIZATION_RE.sub(
-            lambda match: f"{match.group(1)}{match.group(2)}"
-            f"{REDACTED_VALUE}{match.group(4)}",
+            lambda match: (
+                f"{match.group(1)}{match.group(2)}"
+                f"{REDACTED_VALUE}{match.group(4)}"
+            ),
             value,
         )
         value = _BEARER_TOKEN_RE.sub(
@@ -210,13 +209,17 @@ class LogValueSanitizer:
             value,
         )
         value = _QUOTED_INLINE_SECRET_RE.sub(
-            lambda match: f"{match.group(1)}{match.group(2)}"
-            f"{REDACTED_VALUE}{match.group(4)}",
+            lambda match: (
+                f"{match.group(1)}{match.group(2)}"
+                f"{REDACTED_VALUE}{match.group(4)}"
+            ),
             value,
         )
         value = _INLINE_SECRET_RE.sub(
-            lambda match: f"{match.group(1)}{match.group(2)}"
-            f"{REDACTED_VALUE}{match.group(4)}",
+            lambda match: (
+                f"{match.group(1)}{match.group(2)}"
+                f"{REDACTED_VALUE}{match.group(4)}"
+            ),
             value,
         )
         return _URL_CREDENTIAL_RE.sub(
@@ -258,7 +261,11 @@ class LogValueSanitizer:
             "LOG_DECORATOR_REDACT_ENV_VARS",
             "",
         )
-        return {name.strip() for name in configured_names.split(",") if name.strip()}
+        return {
+            name.strip()
+            for name in configured_names.split(",")
+            if name.strip()
+        }
 
     def env_int(self, name: str, default: int) -> int:
         raw_value = self.environ.get(name)
@@ -289,7 +296,9 @@ class LogValueSanitizer:
         if len(value) <= max_string_length:
             return value
 
-        return f"{value[:max_string_length]}{TRUNCATED_VALUE}(chars={len(value)})"
+        return (
+            f"{value[:max_string_length]}{TRUNCATED_VALUE}(chars={len(value)})"
+        )
 
     def _limit(
         self,
@@ -315,7 +324,9 @@ class LogValueSanitizer:
 
         for index, (key, item) in enumerate(value.items()):
             if index >= max_collection_items:
-                sanitized_items.append((TRUNCATED_VALUE, f"items={len(value)}"))
+                sanitized_items.append(
+                    (TRUNCATED_VALUE, f"items={len(value)}")
+                )
                 break
             sanitized_items.append(
                 (
@@ -394,11 +405,13 @@ def sanitize_log_value(
 
 
 def exception_to_string(excp: BaseException) -> str:
-    stack = traceback.extract_stack()[:-3] + traceback.extract_tb(excp.__traceback__)
+    stack = traceback.extract_stack()[:-3] + traceback.extract_tb(
+        excp.__traceback__
+    )
     pretty = traceback.format_list(stack)
-    return "".join(pretty) + "\n  {} {}".format(
-        excp.__class__,
-        DEFAULT_LOG_VALUE_SANITIZER.safe_to_string(excp),
+    return (
+        "".join(pretty)
+        + f"\n  {excp.__class__} {DEFAULT_LOG_VALUE_SANITIZER.safe_to_string(excp)}"
     )
 
 
@@ -410,10 +423,7 @@ def exception_to_log_string(excp: BaseException, prefix: Any = "") -> str:
             8000,
         ),
     )
-    message = "{}\n\n\n{}".format(
-        DEFAULT_LOG_VALUE_SANITIZER.safe_to_string(prefix),
-        exception_to_string(excp=excp),
-    )
+    message = f"{DEFAULT_LOG_VALUE_SANITIZER.safe_to_string(prefix)}\n\n\n{exception_to_string(excp=excp)}"
     return cast(
         str,
         sanitize_log_value(
@@ -423,7 +433,11 @@ def exception_to_log_string(excp: BaseException, prefix: Any = "") -> str:
     )
 
 
-def format_args(func: Any, args: tuple, kwargs: dict) -> tuple:  # type: ignore[type-arg]
+def format_args(
+    func: Callable[..., object],
+    args: tuple[object, ...],
+    kwargs: dict[str, object],
+) -> tuple[str, ...]:
     param_names = list(inspect.signature(func).parameters.keys())
     formatted_args = [
         f"{name}:{type(value).__name__}={sanitize_log_value(value, field_name=name)}"
@@ -438,16 +452,18 @@ def format_args(func: Any, args: tuple, kwargs: dict) -> tuple:  # type: ignore[
 
 
 @overload
-def log_decorator(func: Callable[P, R], send_email: bool = False) -> Callable[P, R]: ...
+def log_decorator[**P, R](
+    func: Callable[P, R], send_email: bool = False
+) -> Callable[P, R]: ...
 
 
 @overload
-def log_decorator(
+def log_decorator[**P, R](
     func: None = None, send_email: bool = False
 ) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
-def log_decorator(
+def log_decorator[**P, R](
     func: Callable[P, R] | None = None, send_email: bool = False
 ) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
     from risclog.logging.sender import smtp_email_send

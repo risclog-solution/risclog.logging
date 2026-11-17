@@ -1,4 +1,5 @@
 import logging
+
 from risclog.logging import getLogger, log_decorator
 
 # Logger erstellen und konfigurieren

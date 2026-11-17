@@ -64,11 +64,11 @@ Ready to contribute? Here's how to set up ``risclog.logging`` for local developm
 
     $ git clone git@github.com:your_name_here/risclog.logging.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
+3. Install uv (https://docs.astral.sh/uv/) and sync the development environment::
 
-    $ mkvirtualenv risclog.logging
     $ cd risclog.logging/
-    $ python setup.py develop
+    $ uv sync --locked --python 3.12
+    $ uv run pre-commit install
 
 4. Create a branch for local development::
 
@@ -76,10 +76,18 @@ Ready to contribute? Here's how to set up ``risclog.logging`` for local developm
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests::
+5. When you're done making changes, run the tests and pre-commit hooks, including
+   Ruff and Pyrefly::
 
-    $ ./pytest
+    $ uv run pytest
+    $ uv run pre-commit run --all-files
+
+   To test the other supported Python version::
+
+    $ uv run --python 3.13 pytest
+
+   After changing dependencies in ``pyproject.toml``, run ``uv lock`` and commit
+   the updated ``uv.lock``.
 
 6. Commit your changes and push your branch to GitHub::
 
@@ -98,8 +106,8 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
-3. The pull request should work for Python 3.10 and 3.11. Check
-   https://travis-ci.com/risclog-solution/risclog.logging/pull_requests
+3. The pull request should work for Python 3.12 and 3.13. Check
+   https://github.com/risclog-solution/risclog.logging/actions
    and make sure that the tests pass for all supported Python versions.
 
 Tips
@@ -107,17 +115,19 @@ Tips
 
 To run a subset of tests::
 
-    $ ./pytest -k test_main
+    $ uv run pytest -k test_get_env
 
 Deploying
 ---------
 
-A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.rst).
-Then run::
+A reminder for the maintainers on how to build a release.
+Update the version in ``pyproject.toml`` and the release notes in ``CHANGES.rst``,
+then run::
 
-$ bump2version patch # possible: major / minor / patch
-$ git push
-$ git push --tags
+    $ uv lock
+    $ uv run pre-commit run --all-files
+    $ uv run pytest
+    $ uv build
 
-Travis will then deploy to PyPI if tests pass.
+Commit the release changes and follow the project's release process to publish
+the distributions in ``dist/``.

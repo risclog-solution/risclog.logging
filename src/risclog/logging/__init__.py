@@ -1,7 +1,8 @@
-from typing import Callable
+from collections.abc import Callable
 
 from risclog.logging.decorators import log_decorator
-from risclog.logging.log import HybridLogger, get_logger as old_get_logger
+from risclog.logging.log import HybridLogger
+from risclog.logging.log import get_logger as old_get_logger
 from risclog.logging.log import getLogger as logger
 
 getLogger: Callable[[str], HybridLogger] = logger

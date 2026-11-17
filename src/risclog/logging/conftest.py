@@ -1,4 +1,5 @@
 import pytest
+
 from risclog.logging import getLogger
 
 # @pytest.fixture
